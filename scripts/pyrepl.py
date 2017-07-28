@@ -2,7 +2,7 @@
 import sys, re
 from telnetlib import Telnet
 
-DEFAULT_PORT = 4241
+DEFAULT_PORT = 4240
 
 class Mozrepl(object):
     def __init__(self, ip="127.0.0.1", port=DEFAULT_PORT):
