@@ -96,6 +96,9 @@ def start(num_displays, num_firefox, killer):
             firefox_to_queue = dict()
             display_num = 0
             for i in range(num_firefox):
+                # TODO, use wmctrl 
+                # 6716 is an example pid and the -e specifies the geometry
+                # wmctrl -ir "$(awk '$3 == 6716 {print $1}' <(wmctrl -lp))" -e '0,0,0,100,100'
                 firefox_procs.append(subprocess.Popen(["firefox","-no-remote","-P", ("display_%d" % i),
                                                        ("--display=:%d" % display_num)],
                                                       preexec_fn=os.setsid, stdout=subprocess.PIPE))
@@ -147,7 +150,7 @@ def requests_to_queues(last_time, num_firefox, firefox_to_queue, c):
     # create intermediate lists for each display
     inter_lists = dict()
     for i in range(num_firefox):
-        inter_lists[i] = []
+        inter_lists[i] = [`]
 
     # populate lists
     for request in rows:
