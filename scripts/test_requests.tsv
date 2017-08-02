@@ -1,0 +1,52 @@
+ts varchar(250)	source varchar(250)	dest varchar(250)	dest_port integer	method varchar(250)	host varchar(250)	uri varchar(250)	url varchar(250)	referrer varchar(250)	user_agent varchar(250)	content_length integer	basic_auth_user varchar(250)	trans_depth integer
+2017/08/01 15:48:03	192.168.1.247						http://homes.cs.washington.edu/~jlcmoore/portfolio/index.html		Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36			
+2017/08/01 15:48:03	192.168.1.244						http://www.cnn.com/		Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko/20100101 Firefox/54.0			
+2017/08/01 15:48:03	192.168.1.244						http://www.cnn.com/2017/08/01/politics/trump-waives-environmental-laws-border-wall/index.html		Debian APT-HTTP/1.3 (1.2.24)			
+2017/08/01 15:48:06	192.168.1.248						http://www.cnn.com/specials/politics/supreme-court-nine		Python-urllib/3.5			
+2017/08/01 15:48:06	192.168.1.222						http://www.webmd.com/		Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36			
+2017/08/01 15:48:06	192.168.1.222						http://www.webmd.com/a-to-z-guides/common-topics		Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko/20100101 Firefox/54.0			
+2017/08/01 15:48:06	192.168.1.222						http://www.webmd.com/cancer/facing-chemotherapy-17/live-with/chemo-fatigue		Debian APT-HTTP/1.3 (1.2.24)			
+2017/08/01 15:48:06	192.168.1.222						http://www.imdb.com/		Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36			
+2017/08/01 15:48:06	192.168.1.244						http://www.imdb.com/title/tt5390504/?pf_rd_m=A2FGELUUNOQJNL&pf_rd_p=2750721702&pf_rd_r=0T5JEQNAXJJHD53V2QGF&pf_rd_s=right-2&pf_rd_t=15061&pf_rd_i=homepage&ref_=hm_otw_t1		Python-urllib/3.5			
+2017/08/01 15:48:07	192.168.1.247						http://www.imdb.com/name/nm3915784/resume?ref_=nm_ov_res					
+2017/08/01 15:48:40	192.168.1.247						http://www.tennessean.com/		Python-urllib/3.5			
+2017/08/01 15:48:40	192.168.1.247						http://www.tennessean.com/story/sports/nfl/titans/2017/08/02/titans-camp-diary-its-summer-eric-k-nashville/531862001/		Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36			
+2017/08/01 15:48:40	192.168.1.244						http://planthardiness.ars.usda.gov/PHZMWeb/		Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko/20100101 Firefox/54.0			
+2017/08/01 15:48:40	192.168.1.248						http://planthardiness.ars.usda.gov/PHZMWeb/InteractiveMap.aspx		Debian APT-HTTP/1.3 (1.2.24)			
+2017/08/01 15:48:43	192.168.1.222						http://www.berkeley.edu/		Python-urllib/3.5			
+2017/08/01 15:48:44	192.168.1.222						http://www.washington.edu/		Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36			
+2017/08/01 15:48:45	192.168.1.222						http://www.washington.edu/president/2017/08/01/celebrating-the-life-and-impact-of-jeff-brotman/?utm_source=uwhp&utm_medium=tiles&utm_campaign=brotman		Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko/20100101 Firefox/54.0			
+2017/08/01 15:48:46	192.168.1.222						http://homes.cs.washington.edu/~jlcmoore/portfolio/index.html		Debian APT-HTTP/1.3 (1.2.24)			
+2017/08/01 15:48:47	192.168.1.244						http://www.webmd.com/		Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36			
+2017/08/01 15:48:48	192.168.1.247						http://www.webmd.com/a-to-z-guides/common-topics		Python-urllib/3.5			
+2017/08/01 15:48:49	192.168.1.247						http://www.webmd.com/cancer/facing-chemotherapy-17/live-with/chemo-fatigue		Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36			
+2017/08/01 15:48:49	192.168.1.244						http://www.imdb.com/		Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko/20100101 Firefox/54.0			
+2017/08/01 15:48:49	192.168.1.248						http://www.imdb.com/title/tt5390504/?pf_rd_m=A2FGELUUNOQJNL&pf_rd_p=2750721702&pf_rd_r=0T5JEQNAXJJHD53V2QGF&pf_rd_s=right-2&pf_rd_t=15061&pf_rd_i=homepage&ref_=hm_otw_t1		Debian APT-HTTP/1.3 (1.2.24)			
+2017/08/01 15:48:49	192.168.1.222						http://www.imdb.com/name/nm3915784/resume?ref_=nm_ov_res		Python-urllib/3.5			
+2017/08/01 15:48:50	192.168.1.222						http://www.tennessean.com/		Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36			
+2017/08/01 15:48:51	192.168.1.222						http://www.tennessean.com/story/sports/nfl/titans/2017/08/02/titans-camp-diary-its-summer-eric-k-nashville/531862001/		Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko/20100101 Firefox/54.0			
+2017/08/01 15:48:52	192.168.1.222						http://planthardiness.ars.usda.gov/PHZMWeb/		Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko/20100101 Firefox/54.0			
+2017/08/01 15:48:52	192.168.1.244						http://homes.cs.washington.edu/~jlcmoore/portfolio/index.html		Debian APT-HTTP/1.3 (1.2.24)			
+2017/08/01 15:48:52	192.168.1.247						http://www.cnn.com/		Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36			
+2017/08/01 15:48:52	192.168.1.247						http://www.cnn.com/2017/08/01/politics/trump-waives-environmental-laws-border-wall/index.html		Python-urllib/3.5			
+2017/08/01 15:48:53	192.1.1.233						http://www.cnn.com/specials/politics/supreme-court-nine					
+2017/08/01 15:48:54	192.168.1.222						http://www.webmd.com/		Python-urllib/3.5			
+2017/08/01 15:48:55	192.168.1.222						http://www.webmd.com/a-to-z-guides/common-topics		Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36			
+2017/08/01 15:48:56	192.168.1.244						http://www.webmd.com/cancer/facing-chemotherapy-17/live-with/chemo-fatigue		Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko/20100101 Firefox/54.0			
+2017/08/01 15:48:57	192.168.1.247						http://www.imdb.com/		Debian APT-HTTP/1.3 (1.2.24)			
+2017/08/01 15:48:58	192.168.1.247						http://www.imdb.com/title/tt5390504/?pf_rd_m=A2FGELUUNOQJNL&pf_rd_p=2750721702&pf_rd_r=0T5JEQNAXJJHD53V2QGF&pf_rd_s=right-2&pf_rd_t=15061&pf_rd_i=homepage&ref_=hm_otw_t1		Python-urllib/3.5			
+2017/08/01 15:48:59	192.1.1.233						http://www.imdb.com/name/nm3915784/resume?ref_=nm_ov_res		Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36			
+2017/08/01 15:48:60	192.168.1.244						http://www.tennessean.com/		Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko/20100101 Firefox/54.0			
+2017/08/01 15:48:61	192.168.1.248						http://www.tennessean.com/story/sports/nfl/titans/2017/08/02/titans-camp-diary-its-summer-eric-k-nashville/531862001/		Debian APT-HTTP/1.3 (1.2.24)			
+2017/08/01 15:48:62	192.168.1.222						http://planthardiness.ars.usda.gov/PHZMWeb/		Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36			
+2017/08/01 15:48:62	192.168.1.222						http://www.imdb.com/		Python-urllib/3.5			
+2017/08/01 15:48:62	192.168.1.222						http://www.imdb.com/title/tt5390504/?pf_rd_m=A2FGELUUNOQJNL&pf_rd_p=2750721702&pf_rd_r=0T5JEQNAXJJHD53V2QGF&pf_rd_s=right-2&pf_rd_t=15061&pf_rd_i=homepage&ref_=hm_otw_t1		Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36			
+2017/08/01 15:48:62	192.168.1.222						http://www.imdb.com/name/nm3915784/resume?ref_=nm_ov_res		Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko/20100101 Firefox/54.0			
+2017/08/01 15:48:62	192.168.1.244						http://www.tennessean.com/		Debian APT-HTTP/1.3 (1.2.24)			
+2017/08/01 15:48:62	192.168.1.247						http://www.tennessean.com/story/sports/nfl/titans/2017/08/02/titans-camp-diary-its-summer-eric-k-nashville/531862001/		Python-urllib/3.5			
+2017/08/01 15:48:62	192.168.1.247						http://planthardiness.ars.usda.gov/PHZMWeb/		Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36			
+2017/08/01 15:48:62	192.1.1.233						http://homes.cs.washington.edu/~jlcmoore/portfolio/index.html		Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko/20100101 Firefox/54.0			
+2017/08/01 15:48:62	192.168.1.222						http://www.cnn.com/		Debian APT-HTTP/1.3 (1.2.24)			
+2017/08/01 15:48:62	192.168.1.222						http://www.cnn.com/2017/08/01/politics/trump-waives-environmental-laws-border-wall/index.html		Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36			
+2017/08/01 15:48:62	192.168.1.244						http://www.cnn.com/specials/politics/supreme-court-nine		Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko/20100101 Firefox/54.0			
+2017/08/01 15:48:62	192.168.1.247						http://www.webmd.com/		Debian APT-HTTP/1.3 (1.2.24)			

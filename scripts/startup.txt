@@ -1,6 +1,8 @@
 
 Make sure connected to internet
 
+/lib/systemd/system/listen.service
+
 Start bro:
 $ sudo /usr/local/bro/bin/broctl
 ->     deploy
@@ -24,3 +26,7 @@ from that get the page requested
 check if local:
 from https://www.bro.org/sphinx-git/httpmonitor/index.html
 Site::is_local_addr(c$id$resp_h)
+
+
+firefox disable crash dialog
+https://support.mozilla.org/en-US/questions/951221
