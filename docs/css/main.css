@@ -32,11 +32,21 @@
   background-size: cover;
 }
 
+/* footnotes from
+https://www.sitepoint.com/accessible-footnotes-css/
+*/
+#footnotes li {
+  margin: 0 0 .5em 2em;
+  text-indent: -2em ;
+}
+
+#footnotes {
+  list-style: none;
+}
+
+
 .pad-container {
   padding-top: 130px;
-}
-.no-top-padding {
-  padding-top: 0px;
 }
 
 .white-text {
@@ -59,6 +69,10 @@
   padding: 20px;
 }
 
+.story-quote {
+  padding-left: 20px;
+  padding-right: 30px;
+}
 /* https://stackoverflow.com/questions/20547819/vertical-align-with-bootstrap-3/27771750#27771750
 */
 .row-xs-flex-center {

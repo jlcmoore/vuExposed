@@ -36,12 +36,12 @@
     <div class="container">
       <!-- Example row of columns -->
       <div class="row">
-        <div class="col-md-8 col-md-offset-2">
+        <div class="col-xs-10 col-sm-10 col-md-8 col-lg-7 block-center">
 
           <div class="page-header" role="main" id="top">
             <h1>Explained</h1>
           </div>
-          <h2 id="vulnerability">Vulnerability and Background</h2>
+          <h3 id="vulnerability">Vulnerability and Background</h3>
           <p>
           The hypertext transmission protocol (HTTP) defines a standard for communication on the web, which, by default, is not encrypted. That means anyone capable of viewing network traffic (an internet service provider, another person on the same WIFI network, or those snooping on other parts of the network – spy agencies) can potentially read and modify content passed only on HTTP. Nevertheless, much of the web (particularly larger companies and those handling sensitive information) has moved to the HTTPS (secure) protocol, which defines an encryption standard.
           </p>
@@ -55,65 +55,71 @@
           In the WIFI protocol all information is broadcast. Thus users on the same network can examine any content sent. An open unsecured WIFI network does not require a login. Many devices automatically connect to open networks. For example, many coffee shops, stores, and public places allow anyone to access the internet through WIFI. There have been demonstrations of the vulnerability of user data and personally identifying information in such public WIFI settings previously (Butler).
           </p>
 
-          <h2 id="example">Example Scenario</h2>
+          <h3 id="example">Example Scenario</h3>
           <p>
           A user passing through the space notices the installation. Reading the default pages display on the monitors, she becomes intrigued and connects to the WIFI network with her phone thus consenting to the terms of use. She explores some of the examples, navigating to unencrypted sites like WebMD and sees her traffic captured on the displays. She then navigates to some encrypted sites (like Google or a bank website) and notices that her traffic is not captured – the display shows the jumbled text that represents an encrypted page. Now she understands a bit more about encryption and follows up with the resources detailed in the zine to learn more and better protect herself on the web (for instance by using HTTPS Everywhere from the EFF).
           </p>
 
-          <h2 id="goals">Goals</h2>
+          <h3 id="goals">Goals</h3>
           <p>
           The internet has become an essential part of life. Much of the data that we send through the internet can be examined by other parties ranging in goals and technical capacity, from ex-lovers to Mossad-like government entities. In developing an internet in which the security of information reflects users’ principles, we must understand the disconnect between what users assume occurs and what can occur. I intend this installation to inform users about privacy and web security by exposing them to a vulnerability in how the internet works. Ideally users of the space come to understand more about HTTP, encryption, and WIFI through exploration of the installation and from provided resources. With this knowledge they will be more effective advocates for a web designed for the people.
           </p>
 
-          <h2 id="legal">Legal and Ethical</h2>
+          <h3 id="legal">Legal and Ethical</h3>
           <p>
-          Conducting this sort of traffic sniffing is not illegal, but people are uncomfortable with the idea of the installation. I plan to introduce a landing page when users attempt to join the WIFI network I set up (similar to the type one might encounter in a coffee shop).
-          </p>
-          <p>
-          Users must click “consent” to the terms of use before joining the WIFI network
+          Conducting this sort of traffic sniffing is not illegal, but people are uncomfortable with the idea of the installation. The wifi network serves a captive portal when users attempt to join (similar to the type one might encounter in a coffee shop) which forces users to consent. The work of Sicker et al. suggests that this is sufficent legal backing. 
           </p>
           <p>
           I am in the process of getting in touch with the institutional review board (IRB) at the University of Washington to approve this project to be used as research. I would also like to conduct a more formal study (in a measurable and quantitative sense) of user reactions to the space, but that is dependent on IRB approval and if I have time after the implementation of the installation.
           </p>
+          <p>
+          I am also in the process of seeking advice from lawyers with the Electronic Frontier Foundation to double check my work.
+          </p>
 
-          <h2 id="summation">Summation</h2>
+          <h3 id="summation">Summation</h3>
           <p>
           This network vulnerability does not just expose locality-based attacks to harvest user information (Butler) which have become increasingly less viable in recent years, but also presents the internet to users in a way they understand (physical location, WIFI, and, to a lesser extent, routers). In providing an interactive exemplification of one threat I hope to guide users to a base of understanding. With this site, I extend this framework to areas which users may not understand as well (like ISPs, network attackers, even websites — actors who have access to user data). In this way, the tangible WIFI vulnerability becomes a vehicle to teach lay users about threat modeling.
           </p>
           <p>
           The majority of web traffic may be over HTTPS, but work from Narayanan and others shows that this underestimates the problem. Furthermore, Miller and Danezis have shown a significant amount of personal identifying information can be inferred even over https. Multiple studies (like that of Englehardt) have shown that web trackers and advertisers can also accumulate massive amounts of user data. I clearly will not be able to deeply inform users about all of these issues, but I hope to scare them a little bit and allow for greater exploration.
           </p>
-
-          <h2>Works Cited</h2>
-          <p>
+          
+          <hr class="divider">
+          <h4>Works Cited</h4>
+          <ul id="footnotes">
+          <li>
           Abu-Salma, Ruba, et al. "Obstacles to the Adoption of Secure Communication Tools." Security and Privacy (SP), 2017 IEEE Symposium on (SP’17). IEEE Computer Society. (2017).
-          </p>
-          <p>
-          Butler, Eric. "Firesheep." http://codebutler. com/firesheep (2010).
-          </p>
-          <p>
-          Danezis, George. "Traffic Analysis of the HTTP Protocol over TLS." (2009). Electronic Frontier Foundation. https://www.eff.org/https-everywhere/ (2017).
-          </p>
-          <p>
+          </li>
+          <li>
+          Butler, Eric. "Firesheep." <a href="http://codebutler.com/firesheep">http://codebutler.com/firesheep</a> (2010).
+          </li>
+          <li>
+          Danezis, George. "Traffic Analysis of the HTTP Protocol over TLS." (2009). Electronic Frontier Foundation. <a href="https://www.eff.org/https-everywhere/">https://www.eff.org/</a> (2017).
+          </li>
+          <li>
           Englehardt, Steven, et al. "Cookies that give you away: The surveillance implications of web tracking." Proceedings of the 24th International Conference on World Wide Web. International World Wide Web Conferences Steering Committee. (2015).
-          </p>
-          <p>
-          “Global Internet Phenomena.” Sandive. https://www.sandvine.com/downloads/general/global-internet- phenomena/2016/global-internet-phenomena-report-latin-america-and-north- america.pdf (2016).
-          </p>
-          <p>
-          Leichenko, Jim. “The Most Expensive Keywords in Paid Search, By Cost Per Click &amp; Spend.” https://www. adgooroo.com/resources/blog/the-most-expensive- keywords-in-paid-search-by-cost-per-click-and-ad-spend/ (2015).
-          </p>
-          <p>
-          Miller, et al. “I Know Why You Went to the Clinic: Risks and Realization of HTTPS Traffic Analysis.” https://www.petsymposium.org/2014/papers/Miller.pdf  (2014).
-          </p>
-          <p>
+          </li>
+          <li>
+          “Global Internet Phenomena.” Sandive. <a href="https://www.sandvine.com/downloads/general/global-internet-phenomena/2016/global-internet-phenomena-report-latin-america-and-north-america.pdf">https://www.sandvine.com/downloads/general/global-internet-phenomena/2016/global-internet-phenomena-report-latin-america-and-north-america.pdf</a> (2016).
+          </li>
+          <li>
+          Leichenko, Jim. “The Most Expensive Keywords in Paid Search, By Cost Per Click &amp; Spend.” <a href="https://www.adgooroo.com/resources/blog/the-most-expensive-keywords-in-paid-search-by-cost-per-click-and-ad-spend/">https://www.adgooroo.com/resources/blog/the-most-expensive-keywords-in-paid-search-by-cost-per-click-and-ad-spend/
+          </a> (2015).
+          </li>
+          <li>
+          Miller, et al. “I Know Why You Went to the Clinic: Risks and Realization of HTTPS Traffic Analysis. <a href="https://www.petsymposium.org/2014/papers/Miller.pdf">https://www.petsymposium.org/2014/papers/Miller.pdf</a>  (2014).
+          </li>
+          <li>
           Narayanan, Reisman.  “ISPs and web privacy: insights from research.” 
           <a href="https://ecfsapi.fcc.gov/file/60002354966.pdf">https://ecfsapi.fcc.gov/file/60002354966.pdf</a> (2016).
-          </p>
-          <p>
-          Swire, et al., “Online Privacy and ISPs: ISP Access to Consumer Data is Limited and Often Less than Access by Others” http://www.iisp.gatech.edu/sites/default/files/images/online_privacy_and_isp s.pdf (2016).
-          </p>
-
+          </li>
+          <li>
+          Sicker, Douglas C., Paul Ohm, and Dirk Grunwald. "Legal issues surrounding monitoring during network research." Proceedings of the 7th ACM SIGCOMM conference on Internet measurement. ACM, 2007.
+          </li>
+          <li>
+          Swire, et al., “Online Privacy and ISPs: ISP Access to Consumer Data is Limited and Often Less than Access by Others” <a href="http://www.iisp.gatech.edu/sites/default/files/images/online_privacy_and_isps.pdf">http://www.iisp.gatech.edu/sites/default/files/images/online_privacy_and_isps.pdf</a>  (2016).
+          </li>
+          </ul>
         </div>
       
       </div>
