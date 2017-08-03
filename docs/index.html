@@ -1,24 +1,26 @@
 <!doctype html>
-<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang=""> <![endif]-->
-<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8" lang=""> <![endif]-->
-<!--[if IE 8]>         <html class="no-js lt-ie9" lang=""> <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang=""> <!--<![endif]-->
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8" lang="en"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9" lang="en"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
     <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-        <title></title>
+        <title>vuExposed</title>
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="apple-touch-icon" href="apple-touch-icon.png">
         <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet">
         <link rel="stylesheet" href="css/bootstrap.min.css">
+         <link href="https://fonts.googleapis.com/css?family=Oswald:400,500" rel="stylesheet"> 
         <style>
             body {
                 padding-top: 50px;
                 padding-bottom: 20px;
             }
         </style>
-        <link rel="stylesheet" href="css/bootstrap-theme.min.css">
+        <!-- <link rel="stylesheet" href="css/bootstrap-theme.min.css">
+        -->
         <link rel="stylesheet" href="css/main.css">
 
         <script src="js/vendor/modernizr-2.8.3-respond-1.4.2.min.js"></script>
@@ -29,12 +31,12 @@
         <![endif]-->
 
     <!-- Main jumbotron for a primary marketing message or call to action -->
-    <div class="jumbotron title-gif">
-      <div class="container text-center title-container">
-        <h1 id="title">vuExposed</h1>
+    <div class="jumbotron jumbrotron-fluid title-gif white-text">
+      <div class="img-overlay">
       </div>
-      <div class="container text-center title-container">
-        <h3 id="subtitle">A installation at <a href="https://vanderbilt.edu/thewondry/">the Wond'ry</a> exploring digital privacy</h3>
+      <div class="container text-center ">
+        <h1 id="title" class="pad-container">vuExposed</h1>
+        <h3 id="subtitle" class="pad-container">A installation at <a href="https://vanderbilt.edu/thewondry/">the Wond'ry</a> exploring digital privacy</h3>
       </div>
     </div>
 
@@ -47,7 +49,7 @@
           Do you shut your shades before changing? What if screens displayed your Internet activity for all to see? We recoil at such invasions, but rarely  consider our privacy on-line. 
           </p>
 
-          <p><a class="btn btn-default" href="description.html" role="button">View details &raquo;</a></p>
+          <p><a class="btn btn-default" href="description.html" role="button">Read more &raquo;</a></p>
 
         </div>
         <div class="col-sm-4">
@@ -56,25 +58,25 @@
           People are uncomfortable with this project, but it merely exposes already prevelant and trivial access. Learn about tools and resources to better protect your own privacy.
           </p>
 
-          <p><a class="btn btn-default" href="protection.html" role="button">View details &raquo;</a></p>
+          <p><a class="btn btn-default" href="protection.html" role="button">Read more &raquo;</a></p>
 
         </div>
         <div class="col-sm-4">
           <h2>Explained</h2>
           <p>Anyone capable of viewing network traffic can potentially read and modify content passed only on HTTP. Dive into how and why vuExposed exploits this vulnerability. </p>
-          <p><a class="btn btn-default" href="explained.html" role="button">View details &raquo;</a></p>
+          <p><a class="btn btn-default" href="explained.html" role="button">Read more &raquo;</a></p>
         </div>
       </div>
 
-      <div class="row">
-        <div class="col-sm-6">
+      <div class="row top-buffer row-sm-flex-center">
+        <div class="col-xs-10 col-sm-6 block-center">
           <a href="https://vanderbilt.edu/thewondry/">
-            <img src="https://s3.amazonaws.com/vu-wp0/wp-content/uploads/sites/134/2017/07/18124816/wondry-logo-2017.gif" />
+            <img alt="Wond'ry" src="https://s3.amazonaws.com/vu-wp0/wp-content/uploads/sites/134/2017/07/18124816/wondry-logo-2017.gif" />
           </a>
         </div>
-        <div class="col-sm-6">
+        <div class="col-xs-10 col-sm-6 block-center">
           <a href="https://www.cs.washington.edu/">
-            <img src="https://www.cs.washington.edu/images/CSEWordmark.svg" />
+            <img alt="UW CSE" src="https://www.cs.washington.edu/images/CSEWordmark.svg" />
           </a>
         </div>
       </div>
@@ -84,7 +86,7 @@
           <h2>Acknowledgements</h2>
 
           <p>
-          This project is funded by the Wond'ry and is the result of the toil of Jared Moore, of the Univeristy of Washington, but he had lots of help. He thanks <a href="https://www.vanderbilt.edu/thewondry/team/robert-grajewski/">Robert Grajewski</a> for the project approval, <a href="https://www.vanderbilt.edu//thewondry/team/deanna-meador/">Deanna Meador</a> for the opportunity, Jay Cavenaugh and Joel Jacobs for soundboarding ideas, Mary Dockery for building the base structure, <a href="https://www.vanderbilt.edu/thewondry/team/ali-coffey/">Ali Coffey</a> for actually buying the parts, Less and Tracy at <a href="http://www.tnrecycle.com/">Green Earth Computer Recycling</a> for the monitors, Michael Hollifield and the people at <a href="https://it.vanderbilt.edu/">Vanderbilt IT</a> for networking support and donated computers, <a href="https://homes.cs.washington.edu/~yoshi/">Yoshi Khono</a> and <a href="http://www.franziroesner.com/">Franzi Roesner</a> for advice, <a href="https://moxie.org/">Moxie</a>  for developing sslstrip, the developers of <a href="https://openwrt.org/">OpenWRT</a>, the developers of <a href="https://bro.org">bro</a>, the developers of <a href="https://www.xplico.org/">Xplico</a>, the developers of <a href="https://www.ubuntu.com/">Ubuntu</a>, and everyone else that has helped along the way. Thank you!
+          This project is funded by the Wond'ry and was proposed, designed, and implemented by <a href="https://homes.cs.washington.edu/~jlcmoore/">Jared Moore</a>, of the Univeristy of Washington, but he had lots of help. He thanks <a href="https://www.vanderbilt.edu/thewondry/team/robert-grajewski/">Robert Grajewski</a> for the project approval, <a href="https://www.vanderbilt.edu//thewondry/team/deanna-meador/">Deanna Meador</a> for the opportunity, Jay Cavenaugh and Joel Jacobs for soundboarding ideas, Mary Dockery for building the base structure, <a href="https://www.vanderbilt.edu/thewondry/team/ali-coffey/">Ali Coffey</a> for actually buying the parts, Less and Tracy at <a href="http://www.tnrecycle.com/">Green Earth Computer Recycling</a> for the monitors, Michael Hollifield and the people at <a href="https://it.vanderbilt.edu/">Vanderbilt IT</a> for networking support and donated computers, <a href="https://homes.cs.washington.edu/~yoshi/">Yoshi Khono</a> and <a href="http://www.franziroesner.com/">Franzi Roesner</a> for advice, <a href="https://moxie.org/">Moxie</a>  for developing sslstrip and the developers of <a href="https://github.com/byt3bl33d3r/MITMf">MITMf</a> for maintaining it, the developers of <a href="https://openwrt.org/">OpenWRT</a>, the developers of <a href="https://bro.org">bro</a>, the developers of <a href="https://www.ubuntu.com/">Ubuntu</a>, and everyone else that has helped along the way. Thank you!
           </p>
           <p>This site uses <a href="https://html5boilerplate.com/">html5boilerplate</a>.</p>
           <p>

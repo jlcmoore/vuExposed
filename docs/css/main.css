@@ -6,35 +6,109 @@
 
 
 .title-gif {
-  background-image: url("../img/giphy.gif");
-  background-color: #17234E;
-  margin-bottom: 0;`enter code here`
+  background-color:transparent;
+  overflow: hidden;
   min-height: 50%;
   height: 500px;
+ }
+
+.img-overlay {
+  background-color: #17234E;
+  background-image: url("../img/giphy.gif");
+  filter: brightness(40%);
+  position: absolute;
+  width: 100%;
+  height: inherit;
+  z-index: -1;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+
   background-repeat: no-repeat;
   background-position: center;
   -webkit-background-size: cover;
   background-size: cover;
 }
 
-.title-container {
+.pad-container {
   padding-top: 130px;
 }
 .no-top-padding {
   padding-top: 0px;
 }
 
-#title, #subtitle {
+.white-text {
   color: #ffffff;
+  /*
+  font-family: 'Oswald', sans-serif;
+  font-weight: 500;
+  */
 }
 
 .row img {
   width: 100%;
 }
 
+.top-buffer {
+  padding-top: 2%;
+}
 
+.story-item {
+  padding: 20px;
+}
 
+/* https://stackoverflow.com/questions/20547819/vertical-align-with-bootstrap-3/27771750#27771750
+*/
+.row-xs-flex-center {
+    display:flex;
+    align-items:center;
+}
 
+.block-center {
+    float: none;
+    margin: 0 auto;
+}
+
+.center {
+  text-align: center;
+  font-size: 15px;
+}
+
+.navbar .container {
+  padding-right: 0px;
+  padding-left: 0px;
+}
+
+.center.navbar .nav,
+.center.navbar .nav > li {
+ float:none;
+    display:inline-block;
+    *display:inline; /* ie7 fix */
+    *zoom:1; /* hasLayout ie7 trigger */
+    vertical-align: top;
+}
+
+@media ( min-width:700px ) {
+    .row-sm-flex-center {
+        display:flex;
+        align-items:center;
+    }
+}
+@media ( min-width: 992px ) {
+    .row-md-flex-center {
+        display:flex;
+        align-items:center;
+    }
+}
+@media ( min-width: 1200px ) {
+    .row-lg-flex-center {
+        display:flex;
+        align-items:center;
+    }
+}
+/* end */
 
 
 
