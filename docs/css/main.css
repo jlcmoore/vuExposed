@@ -11,11 +11,17 @@
   min-height: 50%;
   height: 500px;
  }
+.full-jumbo {
+  height: 100vh;
+}
+.title-gif p {
+  font-size: 10px;
+}
 
 .img-overlay {
   background-color: #17234E;
   background-image: url("../img/giphy.gif");
-  filter: brightness(40%);
+  filter: brightness(70%);
   position: absolute;
   width: 100%;
   height: inherit;
@@ -73,6 +79,28 @@ https://www.sitepoint.com/accessible-footnotes-css/
   padding-left: 20px;
   padding-right: 30px;
 }
+
+body {
+  font-size: 12pt;
+  
+}
+
+p, li {
+  line-height: 19.5pt;
+  font-weight: 400;
+}
+
+footer {
+  font-size: 11pt;
+  padding-bottom: .5em;
+
+}
+
+footer p {
+  margin-bottom: 0;
+  line-height: 18pt;
+}
+
 /* https://stackoverflow.com/questions/20547819/vertical-align-with-bootstrap-3/27771750#27771750
 */
 .row-xs-flex-center {
@@ -85,10 +113,11 @@ https://www.sitepoint.com/accessible-footnotes-css/
     margin: 0 auto;
 }
 
-.center {
+.nav_vu {
   text-align: center;
   font-size: 15px;
 }
+
 
 .navbar .container {
   padding-right: 0px;
