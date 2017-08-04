@@ -1,0 +1,17 @@
+# https://gist.github.com/JustinAzoff/db71b901b1070a88f2d72738bf212749
+[Unit]
+Description=Bro
+After=network.target
+
+[Service]
+ExecStartPre=-/bro/bin/broctl cleanup
+ExecStartPre=/bro/bin/broctl check
+ExecStartPre=/bro/bin/broctl install
+ExecStart=/bro/bin/broctl start
+ExecStop=/bro/bin/broctl stop
+RestartSec=10s
+Type=oneshot
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target listen.service

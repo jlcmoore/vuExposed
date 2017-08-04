@@ -59,6 +59,8 @@ event file_sniff(f: fa_file, meta: fa_metadata)
     if ( !Site::is_local_addr(f$http$id$orig_h))
         return;
 
+    if ( !(/^[wW][wW][wW]/ in f$http$host))
+        return;
     
     local fname = fmt("%s-%s.%s", f$source, f$id, mime_to_flag[meta$mime_type]);
     

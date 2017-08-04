@@ -104,7 +104,7 @@
 # jared code
 @load packages
 redef FileExtract::prefix = "/var/bro_files/";
-@load files
+@load httptosql
 @load base/files/extract/main
 @load base/frameworks/files/main
 @load base/protocols/http/entities

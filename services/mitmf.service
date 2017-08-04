@@ -1,0 +1,11 @@
+[Unit]
+Description=MITMf Proxy and other evilness
+After=network.target multi-user.target
+
+[Service]
+ExecStart=/home/listen/Documents/vuExposed/MITMf/listen.py
+Type=simple
+Restart=Always
+
+[Install]
+WantedBy=listen.service

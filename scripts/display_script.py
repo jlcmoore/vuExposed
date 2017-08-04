@@ -16,22 +16,34 @@ import argparse
 import os
 import re
 import signal
+from adblockparser import AdblockRules
 
-DEFAULT_PAGE = "https://jlcmoore.github.io/vuExposed"
-DISPLAY_SLEEP = 15
+BLOCK_FILES = ["easylist.txt"]
+
+DEFAULT_PAGE = "https://jlcmoore.github.io/vuExposed/monitor.html"
+MACHINE_IP = '192.168.1.125'
+MACHINE_PROXY_PORT = 10000
+
+
+IS_PROXY = True
+
+DISPLAY_SLEEP = 20
+
 INIT_SLEEP = 5
+
 LOG_FILENAME = "listen.log"
 LOG_LEVEL = logging.DEBUG  # Could be e.g. "DEBUG" or "WARNING"
-SQL_DATABASE = "/var/db/filetosql.sqlite"
 
-TABLE_NAME = "requests"
+SQL_DATABASE = "/var/db/httptosql.sqlite"
+TABLE_NAME = "http"
 NUM_DISPLAYS = 3
-QUERY_NO_END = "select ts, source, url, user_agent from " + TABLE_NAME + " WHERE ts > ?"
+QUERY_NO_END = "select ts, source, host, uri, user_agent,referrer, source_port, dest_port from " + TABLE_NAME + " WHERE ts > ?"
 QUERY = QUERY_NO_END + ";"
+DELETE_QUERY = "delete from " + TABLE_NAME + " where ts < ?;"
 TIME_FORMAT = "%Y/%m/%d %H:%M:%S"
 
 TEST_SQL_DATABASE = "test.sqlite"
-TEST_MODE = True
+TEST_MODE = False
 TEST_TIME_START = "2017/08/01 15:48:01"
 TEST_DISPLAY_SLEEP = DISPLAY_SLEEP
 TEST_QUERY = QUERY_NO_END + " and ts < ?;"
@@ -100,17 +112,18 @@ def get_monitor_info():
     return monitor_list
 
 def move_browsers(monitor_list, firefox_procs):
-    firefox_counter = 0
-    for m in monitor_list:
+    monitor_counter = 0
+    for firefox in firefox_procs:
         # already distributed all browsers?
         # 'g,x,y,w,h'
         # the hack here to 10 10 allows the windows to resize to the monitor
         # in which they are placed
+        m = monitor_list[monitor_counter]
         geometry = "0,%s,%s,%s,%s" % (m.x_offset,m.y_offset,10,10)
         logger.info("firefox geometry " + geometry)
-        pid = firefox_procs[firefox_counter].pid
+        pid = firefox.pid
         window_id = get_window_id(pid)
-        firefox_counter = firefox_counter + 1
+        monitor_counter = monitor_counter + 1
         subprocess.Popen(['wmctrl', '-ir', window_id,'-e', geometry])
 
 def get_window_id(pid):
@@ -121,13 +134,19 @@ def get_window_id(pid):
             return cols[0]
     return None
 
+def get_rules():
+    raw_rules = []
+    for filename in BLOCK_FILES:
+        raw_rules = raw_rules + open(filename).readlines()
+    return AdblockRules(raw_rules,use_re2=True)
+
 def start(num_displays, num_firefox, monitor_list, killer):
     dead = threading.Event()
     firefox_procs = []
     threads = []
     try:
         last_time = get_init_time()
-
+        rules = get_rules()
         logger.info("Connecting to sqlite database")
         database = SQL_DATABASE
         if TEST_MODE:
@@ -154,7 +173,7 @@ def start(num_displays, num_firefox, monitor_list, killer):
                 threads.append(t)
 
             while not killer.kill_now:
-                last_time = requests_to_queues(last_time, num_firefox, firefox_to_queue, c)
+                last_time = requests_to_queues(last_time, num_firefox, firefox_to_queue, c, rules)
                 time.sleep(sleep_time())
                 # how do we delete things from the sqlite database?
                 
@@ -174,9 +193,10 @@ def query_for_requests(last_time, new_last_time, c):
     else:
         c.execute(QUERY, (last_time,))
     rows = c.fetchall()
+
     return rows
 
-def requests_to_queues(last_time, num_firefox, firefox_to_queue, c):
+def requests_to_queues(last_time, num_firefox, firefox_to_queue, c, rules):
     logger.debug("last time %s" % last_time)
 
     new_last_time = last_time
@@ -197,15 +217,29 @@ def requests_to_queues(last_time, num_firefox, firefox_to_queue, c):
     for request in rows:
         if request['ts'] > last_time:
             last_time = request['ts']
-        to_firefox = hash(ip_to_subnet(request['source'])) % num_firefox
-        inter_lists[to_firefox].append(request)
+
+        if request['source'] != MACHINE_IP:
+            # block tracking sites, malware, etc.
+            if not rules.should_block(get_url(request)):
+                # TODO: just hash user agent instead so that the router doesn't
+                # need to also run port-mirroring??
+                to_firefox = hash(request['user_agent']) % num_firefox
+                inter_lists[to_firefox].append(request)
 
     # send lists
     for i in range(num_firefox):
         # todo: think about blocking implications
         firefox_to_queue[i].put(inter_lists[i])
     
+    # need to delete old entries in table, but database is read only..
+    # c.execute(DELETE_QUERY, (last_time,))
     return last_time
+
+def get_url(request):
+    url = request['host'] + request['uri']
+    if url.startswith('wwww.'):
+        url = url[1:]
+    return "http://" + url
 
 def ip_to_subnet(ip):
     return ip.split(".")[3]
@@ -233,23 +267,28 @@ def display_main(firefox_num, queue, dead):
                 print requests
                 new_entry = find_best_entry(requests, current_entry)
                 print "thread %d choose %s" % (firefox_num, new_entry)
+                
                 # todocheck document.readyState?
             except Queue.Empty:
-                logger.debug("thread %d queue empty" % firefox_num)
+                print "thread %d queue empty" % firefox_num
                 current_entry = None
                 
             if not (new_entry == None and current_entry == None):
                 if new_entry:
-                    url = new_entry['url']
+                    url = get_url(new_entry)
                     user_agent = new_entry['user_agent']
+                    print "source: " + new_entry['source']
+                    print new_entry
                 else:
                     url = DEFAULT_PAGE
                     user_agent = ""
 
-                logger.info("Thread %d changing url to %s", firefox_num, url)
+                print "Thread %d changing url to %s", firefox_num, url
                 change_url(mozrepl, url)
                 # TODO: this is a hack we want to check that the page is loaded
                 # instead
+                # document.readyState === 'complete'
+                # but do we really care about it that much? no...
                 time.sleep(1)
                 add_user_agent(mozrepl, user_agent)
                 current_entry = new_entry
@@ -258,13 +297,17 @@ def display_main(firefox_num, queue, dead):
 
 def find_best_entry(requests, old):
     # sort based on time so most recent is first
-    sorted(requests, key= lambda request: request['ts'], reverse=True)
+    
+    # todo, testing with shortest url
+    sorted(requests, key= lambda request: len(get_url(request)))
+
+    #sorted(requests, key= lambda request: request['ts'], reverse=True)
     # current entry = most recent entry where entry.uid
     # == current entry.uid || most recent entry || DEFAULT_PAGE                
-    for request in requests:
-        if (old and request['source'] == old['source'] and
-            request['url'] != old['url']):
-            return request
+    #for request in requests:
+    #    if (old and request['user_agent'] == old['user_agent'] and
+    #        get_url(request) != get_url(old)):
+    #        return request
 
     if len(requests) > 0:
         return requests[0]
@@ -323,16 +366,15 @@ if __name__ == "__main__":
                         help="file to write log to (default '" + LOG_FILENAME + "')")
     parser.add_argument("-d", "--display_num", type=int, help="the number of displays")
     parser.add_argument("-f", "--firefox_num", type=int, help="the number of firefox instances")
+
     # If the log file is specified on the command line then override the default
     args = parser.parse_args()
     log_name = LOG_FILENAME
 
     logger = create_logger(log_name)
     monitor_list = get_monitor_info()
-
     if args.log:
         log_name = args.log
-
     if args.display_num:
         num_displays = args.display_num
     else:
