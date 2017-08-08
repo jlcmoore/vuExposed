@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Exec=/home/listen/Documents/vuExposed/scripts/display.sh
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+Name=vuListening
+Comment=listener

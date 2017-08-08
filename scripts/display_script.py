@@ -1,22 +1,24 @@
 #!/usr/bin/env python
 
 # Copyright Jared Moore 2017
-
-import subprocess
+import argparse
+import datetime
 import logging
 import logging.handlers
-import sys
-from pyrepl import Mozrepl, DEFAULT_PORT
-import time
-import threading
-import Queue
-import sqlite3
-import datetime
-import argparse
 import os
+import Queue
 import re
 import signal
+import sqlite3
+import subprocess
+import sys
+import threading
+import time
 from adblockparser import AdblockRules
+from pyrepl import Mozrepl, DEFAULT_PORT
+from daemon import Daemon
+
+
 
 BLOCK_FILES = ["easylist.txt"]
 
@@ -49,10 +51,59 @@ TEST_DISPLAY_SLEEP = DISPLAY_SLEEP
 TEST_QUERY = QUERY_NO_END + " and ts < ?;"
 TEST_TABLE_NAME = "requests"
 
-def main(num_displays, num_firefox, monitor):    
+
+class MonitorInfo(object):
+    def __init__(self,w,h,x,y):
+        self.width = w
+        self.height = h
+        self.x_offset = x
+        self.y_offset = y
+
+def get_window_id(pid):
+    window_info = subprocess.check_output(['wmctrl','-lp']).split('\n')
+    for window in window_info:
+        cols = re.split('\W+', window)
+        if len(cols) > 2 and cols[2] == str(pid):
+            return cols[0]
+    return None
+
+def move_windows(monitor_list, procs):
+    monitor_counter = 0
+    for proc in procs:
+        # already distributed all browsers?
+        # 'g,x,y,w,h'
+        # the hack here to 10 10 allows the windows to resize to the monitor
+        # in which they are placed
+        m = monitor_list[monitor_counter]
+        geometry = "0,%s,%s,%s,%s" % (m.x_offset,m.y_offset,10,10)
+        logger.info("firefox geometry " + geometry)
+        pid = proc.pid
+        window_id = get_window_id(pid)
+        monitor_counter = monitor_counter + 1
+        logger.info("Moving %s to %s", window_id, geometry)
+        subprocess.Popen(['wmctrl', '-ir', window_id,'-e', geometry])
+
+def get_monitor_info():
+    monitor_list = []
+    line_pattern = r"^\w+-\d\Wconnected"
+    geometry_pattern = r"\d+x\d+\+\d+\+\d+"
+    r_line = re.compile(line_pattern)
+    r_geo = re.compile(geometry_pattern)
+    xrandr_out = subprocess.check_output(['xrandr','-q']).split('\n')
+    monitors = filter(r_line.match, xrandr_out)
+    for line in monitors:
+        geometry = r_geo.findall(line)[0]
+        whxy = re.split(r"[+x]",geometry)
+        monitor = MonitorInfo(*whxy)
+        monitor_list.append(monitor)
+        logger.info("monitor at w %s h %s x %s y %s" % (whxy[0],whxy[1],whxy[2],whxy[3]))
+    return monitor_list
+
+def main():    
     logger.info('Started')
-    killer = GracefulKiller()    
-    start(num_displays, num_firefox, monitor_list, killer)
+    killer = GracefulKiller()
+    monitor_list = get_monitor_info() 
+    run(monitor_list, killer)
     logger.info('Finished')
 
 def create_logger(log_name):
@@ -77,9 +128,9 @@ def create_logger(log_name):
     logger.addHandler(handler)
                 
     # Replace stdout with logging to file at INFO level
-    # sys.stdout = MyLogger(logger, logging.INFO)
+    #sys.stdout = MyLogger(logger, logging.INFO)
     # Replace stderr with logging to file at ERROR level
-    # sys.stderr = MyLogger(logger, logging.ERROR)
+    #sys.stderr = MyLogger(logger, logging.ERROR)
     return logger
 
 def get_init_time():
@@ -88,62 +139,18 @@ def get_init_time():
         time = TEST_TIME_START
     return time
 
-class MonitorInfo(object):
-    def __init__(self,w,h,x,y):
-        self.width = w
-        self.height = h
-        self.x_offset = x
-        self.y_offset = y
-
-def get_monitor_info():
-    monitor_list = []
-    line_pattern = r"^\w+-\d\Wconnected"
-    geometry_pattern = r"\d+x\d+\+\d+\+\d+"
-    r_line = re.compile(line_pattern)
-    r_geo = re.compile(geometry_pattern)
-    xrandr_out = subprocess.check_output(['xrandr','-q']).split('\n')
-    monitors = filter(r_line.match, xrandr_out)
-    for line in monitors:
-        geometry = r_geo.findall(line)[0]
-        whxy = re.split(r"[+x]",geometry)
-        monitor = MonitorInfo(*whxy)
-        monitor_list.append(monitor)
-        logger.info("monitor at w %s h %s x %s y %s" % (whxy[0],whxy[1],whxy[2],whxy[3]))
-    return monitor_list
-
-def move_browsers(monitor_list, firefox_procs):
-    monitor_counter = 0
-    for firefox in firefox_procs:
-        # already distributed all browsers?
-        # 'g,x,y,w,h'
-        # the hack here to 10 10 allows the windows to resize to the monitor
-        # in which they are placed
-        m = monitor_list[monitor_counter]
-        geometry = "0,%s,%s,%s,%s" % (m.x_offset,m.y_offset,10,10)
-        logger.info("firefox geometry " + geometry)
-        pid = firefox.pid
-        window_id = get_window_id(pid)
-        monitor_counter = monitor_counter + 1
-        subprocess.Popen(['wmctrl', '-ir', window_id,'-e', geometry])
-
-def get_window_id(pid):
-    window_info = subprocess.check_output(['wmctrl','-lp']).split('\n')
-    for window in window_info:
-        cols = re.split('\W+', window)
-        if len(cols) > 2 and cols[2] == str(pid):
-            return cols[0]
-    return None
-
 def get_rules():
     raw_rules = []
     for filename in BLOCK_FILES:
         raw_rules = raw_rules + open(filename).readlines()
     return AdblockRules(raw_rules,use_re2=True)
 
-def start(num_displays, num_firefox, monitor_list, killer):
+def run(monitor_list, killer):
     dead = threading.Event()
     firefox_procs = []
     threads = []
+    num_displays = len(monitor_list)
+    num_firefox  = len(monitor_list)
     try:
         last_time = get_init_time()
         rules = get_rules()
@@ -165,7 +172,7 @@ def start(num_displays, num_firefox, monitor_list, killer):
                 firefox_to_queue[i] = Queue.Queue()
             # let firefox start
             time.sleep(INIT_SLEEP)
-            move_browsers(monitor_list, firefox_procs)
+            move_windows(monitor_list, firefox_procs)
             ## spawn a thread for each display and start the repl there
             for i in range(num_firefox):
                 t = threading.Thread(target=display_main, args=(i, firefox_to_queue[i], dead))
@@ -180,11 +187,11 @@ def start(num_displays, num_firefox, monitor_list, killer):
     finally:
         dead.set()
         logger.info("Terminated main loop")
+        for firefox in firefox_procs:
+            os.killpg(os.getpgid(firefox.pid), signal.SIGTERM)
         for thread in threads:
             thread.join()
         logger.info("Finished waiting for threads")        
-        for firefox in firefox_procs:
-            os.killpg(os.getpgid(firefox.pid), signal.SIGTERM)
         logger.info("Threads finished")
 
 def query_for_requests(last_time, new_last_time, c):
@@ -206,6 +213,7 @@ def requests_to_queues(last_time, num_firefox, firefox_to_queue, c, rules):
         up_to_time = last_time_dt + delta
         new_last_time = up_to_time.strftime(TIME_FORMAT)
 
+    logger.info("Querying for requests newer than %s" % last_time)
     rows = query_for_requests(last_time, new_last_time, c)
     last_time = new_last_time
     # create intermediate lists for each display
@@ -217,14 +225,15 @@ def requests_to_queues(last_time, num_firefox, firefox_to_queue, c, rules):
     for request in rows:
         if request['ts'] > last_time:
             last_time = request['ts']
-
-        if request['source'] != MACHINE_IP:
+        logger.debug("Potential request for %s from src ip %s", get_url(request), request['source'])
+        if request['source'] == MACHINE_IP:
             # block tracking sites, malware, etc.
             if not rules.should_block(get_url(request)):
                 # TODO: just hash user agent instead so that the router doesn't
                 # need to also run port-mirroring??
                 to_firefox = hash(request['user_agent']) % num_firefox
                 inter_lists[to_firefox].append(request)
+                logger.debug("Added request for %s to browswer %d", get_url(request), to_firefox)
 
     # send lists
     for i in range(num_firefox):
@@ -255,41 +264,45 @@ def display_main(firefox_num, queue, dead):
     logger.info("Thread %d starting", firefox_num)
     port = DEFAULT_PORT + firefox_num
     with Mozrepl(port=port) as mozrepl:
-        logger.info(mozrepl.js("repl.whereAmI()"))
         current_entry = None
         change_url(mozrepl, DEFAULT_PAGE)
+        logger.info(mozrepl.js("repl.whereAmI()"))
         while not dead.is_set():
             new_entry = None
             try:
                 # get all the new entries in the queue
                 requests = queue.get(True, sleep_time()) # blocking call
-                print "thread %d requests %s" % (firefox_num, requests)
+                logger.debug("thread %d requests %s", firefox_num, requests)
                 print requests
                 new_entry = find_best_entry(requests, current_entry)
-                print "thread %d choose %s" % (firefox_num, new_entry)
                 
                 # todocheck document.readyState?
             except Queue.Empty:
-                print "thread %d queue empty" % firefox_num
+                logger.debug("thread %d queue empty", firefox_num)
                 current_entry = None
                 
             if not (new_entry == None and current_entry == None):
+                # TODO: as a backup check the mime type of the requested url
+                # if bad, just wait
                 if new_entry:
                     url = get_url(new_entry)
                     user_agent = new_entry['user_agent']
-                    print "source: " + new_entry['source']
+                    logger.debug("thread %d new entry source: %s", firefox_num, 
+                        new_entry['source'])
                     print new_entry
                 else:
                     url = DEFAULT_PAGE
                     user_agent = ""
 
-                print "Thread %d changing url to %s", firefox_num, url
+                logger.info("Thread %d changing url to %s", firefox_num, url)
                 change_url(mozrepl, url)
                 # TODO: this is a hack we want to check that the page is loaded
                 # instead
                 # document.readyState === 'complete'
                 # but do we really care about it that much? no...
-                time.sleep(1)
+                time.sleep(.1)
+                add_user_agent(mozrepl, user_agent)
+                time.sleep(2)
                 add_user_agent(mozrepl, user_agent)
                 current_entry = new_entry
 
@@ -331,23 +344,6 @@ def add_user_agent(mozrepl, user_agent):
     mozrepl.js("div.style.position = 'absolute'")
     mozrepl.js("body.insertBefore(div, body.firstChild)")
 
-###### SETUP
-# from http://blog.scphillips.com/posts/2013/07/getting-a-python-script-to-run-in-the-background-as-a-service-on-boot/
-# Make a class we can use to capture stdout and sterr in the log
-# todo: only redirect when actually running for a long time
-'''
-class MyLogger(object):
-    def __init__(self, logger, level):
-        """Needs a logger and a logger level."""
-        self.logger = logger
-        self.level = level
-        
-    def write(self, message):
-        # Only log if there is a message (not just a new line)
-        if message.rstrip() != "":
-            self.logger.log(self.level, message.rstrip())
-'''
-
 ### from https://stackoverflow.com/questions/18499497/how-to-process-sigterm-signal-gracefully
 class GracefulKiller:
     kill_now = False
@@ -359,33 +355,26 @@ class GracefulKiller:
         self.kill_now = True
 ###
 
+class DisplayDaemon(Daemon):
+    def run(self):
+            main()
+
+# TODO: turn into a class and don't use this logger
+logger = create_logger(LOG_FILENAME)
+
 if __name__ == "__main__":
-    # Define and parse command line arguments
-    parser = argparse.ArgumentParser(description="vuExposed listening service")
-    parser.add_argument("-l", "--log",
-                        help="file to write log to (default '" + LOG_FILENAME + "')")
-    parser.add_argument("-d", "--display_num", type=int, help="the number of displays")
-    parser.add_argument("-f", "--firefox_num", type=int, help="the number of firefox instances")
-
-    # If the log file is specified on the command line then override the default
-    args = parser.parse_args()
-    log_name = LOG_FILENAME
-
-    logger = create_logger(log_name)
-    monitor_list = get_monitor_info()
-    if args.log:
-        log_name = args.log
-    if args.display_num:
-        num_displays = args.display_num
+    daemon = DisplayDaemon('/tmp/display_daemon.pid')
+    if len(sys.argv) == 2:
+            if 'start' == sys.argv[1]:
+                    daemon.start()
+            elif 'stop' == sys.argv[1]:
+                    daemon.stop()
+            elif 'restart' == sys.argv[1]:
+                    daemon.restart()
+            else:
+                    print "Unknown command"
+                    sys.exit(2)
+            sys.exit(0)
     else:
-        num_displays = len(monitor_list)
-
-    if args.firefox_num:
-        num_firefox = args.firefox_num
-    else:
-        num_firefox = num_displays
-
-    if num_firefox > num_displays or num_displays > len(monitor_list):
-        sys.exit()
-
-    main(num_displays, num_firefox, monitor_list)
+            print "usage: %s start|stop|restart" % sys.argv[0]
+            sys.exit(2)

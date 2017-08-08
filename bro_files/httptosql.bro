@@ -38,8 +38,9 @@ event bro_init()
 
 global page_endings = /\.(html|htm|xhtml|xht|mht|mhtml|maff|asp|aspx|bml|cfm|cgi|ihtml|jsp|las|lasso|lassoapp|pl|rna|r|rnx|shtml|stm|php|php\?|phtml)/;
 
-global no_types = /\.(aac|abw|arc|avi|azw|bin|bz|bz2|csh|css|eot|gif|ico|ics|izl|jar|jpeg|jpg|js|json|mid|midi|mpeg|mpkg|odp|ods|odt|oga|ogv|ogx|otf|php|png|rar|sh|svg|swf|tar|tif|tiff|ts|ttf|vsd|wav|weba|webm|webp|woff|woff2|xml|xul|zip|3gp|3g2|7z)/;
+global no_types = /\.(aac|abw|arc|avi|azw|bin|bz|bz2|csh|css|eot|gif|ico|ics|izl|jar|jpeg|jpg|js|json|mid|midi|mpeg|mpkg|odp|ods|odt|oga|ogv|ogx|otf|php|png|rar|sh|svg|swf|tar|tif|tiff|ts|ttf|vsd|wav|weba|webm|webp|woff|woff2|xml|xul|zip|3gp|3g2|7z|svc|mp4)/;
 
+# TODO: try with when the log is written out and then examine the mime types?
 event http_all_headers(c: connection, is_orig: bool, hlist: mime_header_list)
 {   
     if (!is_orig)
@@ -54,8 +55,8 @@ event http_all_headers(c: connection, is_orig: bool, hlist: mime_header_list)
     if ( !(/^[wW][wW][wW]/ in c$http$host))
         return;
 
-    #if ( c$http$trans_depth > 1)
-    #    return;
+    if ( c$http$trans_depth > 1)
+        return;
 
     local req: Request;
         

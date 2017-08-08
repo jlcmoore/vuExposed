@@ -33,3 +33,4 @@ https://support.mozilla.org/en-US/questions/951221
 about:config
 >browser.sessionstore.resume_from_crash
  toolkit.startup.max_resumed_crashes
+ accessibility.blockautorefresh

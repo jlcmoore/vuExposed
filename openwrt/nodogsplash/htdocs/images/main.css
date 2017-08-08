@@ -1,0 +1,9 @@
+.cont {
+	text-align: center;
+	padding-top: 30vh;
+}
+
+.block-center {
+    float: none;
+    margin: 0 auto;
+}

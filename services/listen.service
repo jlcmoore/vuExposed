@@ -1,8 +1,0 @@
-[Unit]
-Description=vuExposed Listening Service
-After=bro.service mitmf.service graphical.target
-
-[Service]
-ExecStart=/home/listen/Documents/vuExposed/scripts/listen.py
-Type=simple
-Restart=Always
