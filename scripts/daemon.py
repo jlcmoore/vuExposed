@@ -179,7 +179,7 @@ class Daemon(object):
                 os.kill(pid, signal.SIGTERM)
                 time.sleep(0.1)
                 i = i + 1
-                if i % 10 == 0:
+                if i % 50 == 0:
                     os.kill(pid, signal.SIGHUP)
         except OSError as err:
             if err.errno == errno.ESRCH:

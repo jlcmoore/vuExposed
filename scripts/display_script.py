@@ -19,6 +19,8 @@ from adblockparser import AdblockRules
 from pyrepl import Mozrepl, DEFAULT_PORT
 from daemon import Daemon
 
+TMP_DIR = '/tmp/display/'
+ACCEPTABLE_HTTP_STATUSES = [200, 201]
 BLOCK_FILES = ["block_lists/easylist.txt","block_lists/unified_hosts_and_porn.txt"]
 DEFAULT_PAGE = "file:///home/listen/Documents/vuExposed/docs/monitor.html"
 DISPLAY_SLEEP = 10
@@ -28,12 +30,12 @@ IGNORE_USER_AGENTS = ['Python-urllib/1.17','Mozilla/5.0 (X11; Ubuntu; Linux x86_
 INIT_SLEEP = 5
 IS_PROXY = True
 LOCAL_IP_PATTERN = r"192\.168\.1\.\d{1,3}"
-LOG_FILENAME = "/tmp/listen.log"
+LOG_FILENAME = "listen.log"
 LOG_LEVEL = logging.DEBUG  # Could be e.g. "DEBUG" or "WARNING"
 MACHINE_IP = '192.168.1.125'
 MACHINE_PROXY_PORT = 10000
 NUM_DISPLAYS = 3
-PID_FILE = '/tmp/display_daemon.pid'
+PID_FILE = 'display_daemon.pid'
 PORT_MIRRORING = True
 SQL_DATABASE = "/var/db/httptosql.sqlite"
 TABLE_NAME = "http"
@@ -76,6 +78,9 @@ def move_windows(monitor_list, procs):
         logger.info("firefox geometry " + geometry)
         pid = proc.pid
         window_id = get_window_id(pid)
+        if not window_id:
+            logger.error("Could not get window id of firefox instance; dying")
+            sys.exit(1)
         monitor_counter = monitor_counter + 1
         logger.info("Moving %s to %s", window_id, geometry)
         subprocess.Popen(['wmctrl', '-ir', window_id,'-e', geometry])
@@ -177,10 +182,10 @@ def run(monitor_list, killer):
     finally:
         dead.set()
         logger.info("Terminated main loop")
-        for firefox in firefox_procs:
-            os.killpg(os.getpgid(firefox.pid), signal.SIGTERM)
         for thread in threads:
             thread.join()
+        for firefox in firefox_procs:
+            os.killpg(os.getpgid(firefox.pid), signal.SIGTERM)
         logger.info("Finished waiting for threads")        
         logger.info("Threads finished")
 
@@ -245,7 +250,8 @@ def can_show_url(url):
     res = urllib.urlopen(url)
     http_message = res.info()
     full = http_message.type # 'text/plain'
-    return full == HTML_MIME
+    code = res.getcode()
+    return full == HTML_MIME and code in ACCEPTABLE_HTTP_STATUSES
 
 def is_wifi_request(request):
     ip = request['source']
@@ -273,7 +279,7 @@ def display_main(firefox_num, queue, dead):
         change_url(mozrepl, DEFAULT_PAGE)
         logger.info(mozrepl.js("repl.whereAmI()"))
         cycles_without_new = 0
-        while not dead.is_set():
+        while True:
             new_entry = None
             try:
                 # TODO: change this to get no wait and then sleep, add user agent loop for display sleep time
@@ -304,7 +310,8 @@ def display_main(firefox_num, queue, dead):
                     current_entry = new_entry
                     if user_agent:
                         logger.debug(page_complete(mozrepl))
-                        while (time_slept < sleep_time()) and (not page_complete(mozrepl)):
+                        while (not dead.is_set() and (time_slept < sleep_time()) and 
+                                (not page_complete(mozrepl))):
                             logger.debug("thread %d url not ready", firefox_num)
                             delta = 1
                             time_slept = time_slept + delta
@@ -312,10 +319,16 @@ def display_main(firefox_num, queue, dead):
                             add_user_agent(mozrepl, user_agent)
                         delta = 2
                         time_slept = time_slept + delta
-                        time.sleep(delta)
+                        if not dead.is_set():
+                            time.sleep(delta)
+                        else:
+                            break
                         add_user_agent(mozrepl, user_agent)
                         logger.debug("Thread %d added user agent %s", firefox_num, user_agent)
-            time.sleep(sleep_time() - time_slept)
+            if not dead.is_set():
+                time.sleep(sleep_time() - time_slept)
+            else: 
+                break
 
     logger.info("Thread %d ending", firefox_num)
 
@@ -395,10 +408,13 @@ class LoggerWriter:
         pass
 
 # TODO: turn into a class and don't use this logger
-logger = create_logger(LOG_FILENAME)
+
 
 if __name__ == "__main__":
-    daemon = DisplayDaemon(PID_FILE)
+    if not os.path.isdir(TMP_DIR):
+        os.mkdir(TMP_DIR)
+    logger = create_logger(TMP_DIR + sys.argv[1] + "_" + LOG_FILENAME)
+    daemon = DisplayDaemon(TMP_DIR + PID_FILE)
     if len(sys.argv) == 2:
             if 'start' == sys.argv[1]:
                     daemon.start()
