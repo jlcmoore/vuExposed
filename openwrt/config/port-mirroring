@@ -1,0 +1,12 @@
+#
+# OpenWrt Unified Configuration Interface (UCI) for port-mirroring
+#
+# https://github.com/mmaraya/port-mirroring
+# 
+
+config 'port-mirroring'
+    option source_ports 'eth0'    # interface(s) to copy packets from
+    option target       '192.168.1.125' # interface or IP address to send packets to
+    option protocol     'TEE'           # 'TEE' iptables or 'TZSP' TaZmen Sniffer Protocol 
+    option filter       ''              # optional tcpdump/libpcap packet filter expressions
+

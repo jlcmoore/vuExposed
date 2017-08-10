@@ -1,0 +1,11 @@
+[Unit]
+Description=MITMf Proxy and other evilness
+After=network.target multi-user.target
+
+[Service]
+WorkingDirectory=/home/listen/Documents/vuExposed/MITMf
+ExecStart=/home/listen/.virtualenvs/MITMf/bin/python /home/listen/Documents/vuExposed/MITMf/mitmf.py -i eno1
+Type=simple
+
+[Install]
+WantedBy=listen.service
