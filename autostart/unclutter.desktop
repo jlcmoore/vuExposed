@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
-Exec=/usr/local/bin/display_start.sh
+Exec=unclutter -idle 5
 Hidden=false
 NoDisplay=false
 X-GNOME-Autostart-enabled=true
-Name=vuListening
-Comment=listener
+Name[en_US]=unclutter
+Name=unclutter
