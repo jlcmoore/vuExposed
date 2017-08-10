@@ -35,3 +35,5 @@ about:config
  toolkit.startup.max_resumed_crashes
  accessibility.blockautorefresh
  browser.cache.disk.enable
+
+also .mozilla/firefox/profile/userChrome.css

@@ -142,9 +142,9 @@ class Daemon(object):
             pid = None
 
         if pid:
-            message = "pidfile %s already exists. Is it already running?\n"
+            message = "pidfile %s already exists. Is it already running?"
             sys.stderr.write(message % self.pidfile)
-            sys.exit(1)
+            self.stop()
 
         # Start the daemon
         self.daemonize()
@@ -177,9 +177,9 @@ class Daemon(object):
             i = 0
             while 1:
                 os.kill(pid, signal.SIGTERM)
-                time.sleep(0.1)
+                time.sleep(1)
                 i = i + 1
-                if i % 50 == 0:
+                if i % 10 == 0:
                     os.kill(pid, signal.SIGHUP)
         except OSError as err:
             if err.errno == errno.ESRCH:

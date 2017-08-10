@@ -14,8 +14,9 @@ import subprocess
 import sys
 import threading
 import time
-import urllib
+import urllib2
 from adblockparser import AdblockRules
+import httpagentparser
 from pyrepl import Mozrepl, DEFAULT_PORT
 from daemon import Daemon
 
@@ -25,11 +26,13 @@ BLOCK_FILES = ["block_lists/easylist.txt","block_lists/unified_hosts_and_porn.tx
 DEFAULT_PAGE = "file:///home/listen/Documents/vuExposed/docs/monitor.html"
 DISPLAY_SLEEP = 10
 DISPLAY_CYCLES_NO_NEW_REQUESTS = 2
+DOCTYPE_PATTERN = re.compile("!doctype html", re.IGNORECASE)
+FILTER_LOAD_URL_TIMEOUT = .5
 HTML_MIME = "text/html"
 IGNORE_USER_AGENTS = ['Python-urllib/1.17','Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko/20100101 Firefox/54.0']
 INIT_SLEEP = 5
 IS_PROXY = True
-LOCAL_IP_PATTERN = r"192\.168\.1\.\d{1,3}"
+LOCAL_IP_PATTERN = re.compile(r"192\.168\.1\.\d{1,3}")
 LOG_FILENAME = "listen.log"
 LOG_LEVEL = logging.DEBUG  # Could be e.g. "DEBUG" or "WARNING"
 MACHINE_IP = '192.168.1.125'
@@ -47,7 +50,7 @@ TIME_FORMAT = "%Y/%m/%d %H:%M:%S"
 TEST_MODE = False
 TEST_DISPLAY_SLEEP = DISPLAY_SLEEP
 TEST_QUERY = QUERY_NO_END + " and ts < ?;"
-TEST_SQL_DATABASE = "test.sqlite"
+TEST_SQL_DATABASE = "assets/test.sqlite"
 TEST_TABLE_NAME = "requests"
 TEST_TIME_START = "2017/08/01 15:48:01"
 
@@ -225,8 +228,9 @@ def requests_to_queues(last_time, num_firefox, firefox_to_queue, c, rules):
             last_time = request['ts']
         url = get_url(request)
         logger.debug("Potential request for %s from src ip %s", url, request['source'])
-        # TODO: change this conditonal if using port mirroring or not...
-        if is_wifi_request(request) and (not rules.should_block(url)) and can_show_url(url):
+        if (is_wifi_request(request) and 
+                (not rules.should_block(url)) and
+                can_show_url(url)):
             to_firefox = hash(request['user_agent']) % num_firefox
             inter_lists[to_firefox].append(request)
             logger.info("Added request for %s to browswer %d", url, to_firefox)
@@ -247,18 +251,28 @@ def get_url(request):
     return "http://" + url
 
 def can_show_url(url):
-    res = urllib.urlopen(url)
-    http_message = res.info()
-    full = http_message.type # 'text/plain'
-    code = res.getcode()
-    return full == HTML_MIME and code in ACCEPTABLE_HTTP_STATUSES
-
+    try:
+        res = urllib2.urlopen(url, timeout=FILTER_LOAD_URL_TIMEOUT)
+        http_message = res.info()
+        full = http_message.type # 'text/plain'
+        code = res.getcode()
+        if full == HTML_MIME and code in ACCEPTABLE_HTTP_STATUSES:
+            data = res.read()
+            return re.search(DOCTYPE_PATTERN, data)
+    except (urllib2.HTTPError, urllib2.URLError) as error:
+        logging.error('url %s open error: %s', url, error)
+    except socket.timeout:
+        logging.error('socket timed out for url %s', url)
+    return False
+        
 def is_wifi_request(request):
     ip = request['source']
     if PORT_MIRRORING:
-        result = not re.search(MACHINE_IP, ip) and not request['user_agent'] in IGNORE_USER_AGENTS
+        result = (not re.search(MACHINE_IP, ip) and
+         not request['user_agent'] in IGNORE_USER_AGENTS)
     else:
-        result = re.search(MACHINE_IP, ip) and request['source_port'] == MACHINE_PROXY_PORT
+        result = (re.search(MACHINE_IP, ip) and
+         request['source_port'] == MACHINE_PROXY_PORT)
     return result
 
 def ip_to_subnet(ip):
@@ -293,7 +307,7 @@ def display_main(firefox_num, queue, dead):
             if not (new_entry == None and current_entry == None):
                 if new_entry:
                     url = get_url(new_entry)
-                    user_agent = new_entry['user_agent']
+                    user_agent = get_nice_user_agent(new_entry['user_agent'])
                     logger.debug("thread %d new entry source: %s", firefox_num, 
                         new_entry['source'])
                     logger.debug("thread %d new entry user agent: %s", firefox_num, 
@@ -319,16 +333,14 @@ def display_main(firefox_num, queue, dead):
                             add_user_agent(mozrepl, user_agent)
                         delta = 2
                         time_slept = time_slept + delta
-                        if not dead.is_set():
-                            time.sleep(delta)
-                        else:
+                        if dead.is_set():
                             break
+                        time.sleep(delta)
                         add_user_agent(mozrepl, user_agent)
                         logger.debug("Thread %d added user agent %s", firefox_num, user_agent)
-            if not dead.is_set():
-                time.sleep(sleep_time() - time_slept)
-            else: 
+            if dead.is_set():
                 break
+            time.sleep(sleep_time() - time_slept)
 
     logger.info("Thread %d ending", firefox_num)
 
@@ -350,7 +362,17 @@ def find_best_entry(requests, old):
         return requests[0]
     else:
         return None
-        
+
+def get_nice_user_agent(user_agent):
+    uaobj = httpagentparser.detect(new_entry['user_agent'])
+    res = ""
+    if uaobj:
+        if uaobj['os'] and uaobj['os']['name']:
+            res = res + uaobj['os']['name'] + " "
+        if uaobj['browser'] and uaobj['browser']['name']:
+            res = res + uaobj['browser']['name']
+    return res
+
 def page_complete(mozrepl):
     return 'complete' in mozrepl.js("document.readyState")
 
@@ -416,18 +438,18 @@ if __name__ == "__main__":
     logger = create_logger(TMP_DIR + sys.argv[1] + "_" + LOG_FILENAME)
     daemon = DisplayDaemon(TMP_DIR + PID_FILE)
     if len(sys.argv) == 2:
-            if 'start' == sys.argv[1]:
-                    daemon.start()
-            elif 'stop' == sys.argv[1]:
-                    daemon.stop()
-            elif 'restart' == sys.argv[1]:
-                    daemon.restart()
-            elif 'run' == sys.argv[1]:
-                    daemon.run()
-            else:
-                    print "Unknown command"
-                    sys.exit(2)
-            sys.exit(0)
-    else:
-            print "usage: %s start|stop|restart|run" % sys.argv[0]
+        if 'start' == sys.argv[1]:
+            daemon.start()
+        elif 'stop' == sys.argv[1]:
+            daemon.stop()
+        elif 'restart' == sys.argv[1]:
+            daemon.restart()
+        elif 'run' == sys.argv[1]:
+            daemon.run()
+        else:
+            print "Unknown command"
             sys.exit(2)
+        sys.exit(0)
+    else:
+        print "usage: %s start|stop|restart|run" % sys.argv[0]
+        sys.exit(2)
