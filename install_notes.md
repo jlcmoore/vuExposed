@@ -34,3 +34,4 @@ about:config
 >browser.sessionstore.resume_from_crash
  toolkit.startup.max_resumed_crashes
  accessibility.blockautorefresh
+ browser.cache.disk.enable

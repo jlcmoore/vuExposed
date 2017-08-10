@@ -1,0 +1,13 @@
+#!/usr/bin/env xdg-open
+
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=false
+Icon[en_US]=gnome-panel-launcher
+Exec=/home/listen/Documents/vuExposed/scripts/display_start.sh
+Name[en_US]=vuExposed Display Start
+Comment[en_US]=Start
+Name=vuExposed Display Start
+Comment=Start
+Icon=/home/listen/Documents/vuExposed/images/start.png

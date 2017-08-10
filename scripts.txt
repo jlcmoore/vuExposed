@@ -1,0 +1,23 @@
+
+open new firefox instance to fullscreen
+- use R-kiosk extension to default to full screen
+-- https://addons.mozilla.org/en-us/firefox/addon/r-kiosk/
+
+mozrepl
+- activate on startup
+- display_1 at 4241, display_2 at 4242 ...
+- install python version https://github.com/bard/mozrepl/wiki/Pyrepl
+- check document.readyState = "interactive" || "complete"XS
+- change content.location.href = 'URL'
+$ rlwrap telnet localhost 4241
+
+echo $DISPLAY
+     to get the displays attached
+
+firefox -no-remote -P display_[1|2|3] --display=:0 &
+
+
+
+user agent info
+- capture the user agent info as well and display in a terminal 
+- inject into web pages as absolutly positioned in the corner

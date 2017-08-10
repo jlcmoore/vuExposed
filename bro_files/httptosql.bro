@@ -40,6 +40,8 @@ global page_endings = /\.(html|htm|xhtml|xht|mht|mhtml|maff|asp|aspx|bml|cfm|cgi
 
 global no_types = /\.(aac|abw|arc|avi|azw|bin|bz|bz2|csh|css|eot|gif|ico|ics|izl|jar|jpeg|jpg|js|json|mid|midi|mpeg|mpkg|odp|ods|odt|oga|ogv|ogx|otf|php|png|rar|sh|svg|swf|tar|tif|tiff|ts|ttf|vsd|wav|weba|webm|webp|woff|woff2|xml|xul|zip|3gp|3g2|7z|svc|mp4)/;
 
+global browsers = /[fF][iI][rR][eE][fF][oO][xX]|[oO][pP][eE][rR][aA]|[sS][aa][fF][aA][rR][iI]|[cC][hH][rR][oO][mM][eE]|[cC][hH][rR][oO][mM][iI][uU][mM]|[Mm][Ss][Ii][Ee]|[Oo][Pp][Rr]|[sS][eE][aA][mM][oO][nN][kK][yY]/;
+
 # TODO: try with when the log is written out and then examine the mime types?
 event http_all_headers(c: connection, is_orig: bool, hlist: mime_header_list)
 {   
@@ -49,14 +51,17 @@ event http_all_headers(c: connection, is_orig: bool, hlist: mime_header_list)
     if ( !Site::is_local_addr(c$id$orig_h))
         return;
 
+    if ( !(browsers in c$http$user_agent))
+        return;
+
     if ( no_types in c$http$uri)
         return;
     
-    if ( !(/^[wW][wW][wW]/ in c$http$host))
-        return;
+    #if ( !(/^[wW][wW][wW]/ in c$http$host))
+    #    return;
 
-    if ( c$http$trans_depth > 1)
-        return;
+    #if ( c$http$trans_depth > 1)
+    #    return;
 
     local req: Request;
         

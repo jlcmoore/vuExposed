@@ -14,42 +14,40 @@ import subprocess
 import sys
 import threading
 import time
+import urllib
 from adblockparser import AdblockRules
 from pyrepl import Mozrepl, DEFAULT_PORT
 from daemon import Daemon
 
-
-
-BLOCK_FILES = ["easylist.txt"]
-
-DEFAULT_PAGE = "https://jlcmoore.github.io/vuExposed/monitor.html"
+BLOCK_FILES = ["block_lists/easylist.txt","block_lists/unified_hosts_and_porn.txt"]
+DEFAULT_PAGE = "file:///home/listen/Documents/vuExposed/docs/monitor.html"
+DISPLAY_SLEEP = 10
+DISPLAY_CYCLES_NO_NEW_REQUESTS = 2
+HTML_MIME = "text/html"
+IGNORE_USER_AGENTS = ['Python-urllib/1.17','Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0) Gecko/20100101 Firefox/54.0']
+INIT_SLEEP = 5
+IS_PROXY = True
+LOCAL_IP_PATTERN = r"192\.168\.1\.\d{1,3}"
+LOG_FILENAME = "/tmp/listen.log"
+LOG_LEVEL = logging.DEBUG  # Could be e.g. "DEBUG" or "WARNING"
 MACHINE_IP = '192.168.1.125'
 MACHINE_PROXY_PORT = 10000
-
-
-IS_PROXY = True
-
-DISPLAY_SLEEP = 20
-
-INIT_SLEEP = 5
-
-LOG_FILENAME = "listen.log"
-LOG_LEVEL = logging.DEBUG  # Could be e.g. "DEBUG" or "WARNING"
-
+NUM_DISPLAYS = 3
+PID_FILE = '/tmp/display_daemon.pid'
+PORT_MIRRORING = True
 SQL_DATABASE = "/var/db/httptosql.sqlite"
 TABLE_NAME = "http"
-NUM_DISPLAYS = 3
 QUERY_NO_END = "select ts, source, host, uri, user_agent,referrer, source_port, dest_port from " + TABLE_NAME + " WHERE ts > ?"
 QUERY = QUERY_NO_END + ";"
 DELETE_QUERY = "delete from " + TABLE_NAME + " where ts < ?;"
-TIME_FORMAT = "%Y/%m/%d %H:%M:%S"
 
-TEST_SQL_DATABASE = "test.sqlite"
+TIME_FORMAT = "%Y/%m/%d %H:%M:%S"
 TEST_MODE = False
-TEST_TIME_START = "2017/08/01 15:48:01"
 TEST_DISPLAY_SLEEP = DISPLAY_SLEEP
 TEST_QUERY = QUERY_NO_END + " and ts < ?;"
+TEST_SQL_DATABASE = "test.sqlite"
 TEST_TABLE_NAME = "requests"
+TEST_TIME_START = "2017/08/01 15:48:01"
 
 
 class MonitorInfo(object):
@@ -70,7 +68,6 @@ def get_window_id(pid):
 def move_windows(monitor_list, procs):
     monitor_counter = 0
     for proc in procs:
-        # already distributed all browsers?
         # 'g,x,y,w,h'
         # the hack here to 10 10 allows the windows to resize to the monitor
         # in which they are placed
@@ -111,26 +108,19 @@ def create_logger(log_name):
         os.remove(log_name)
     # Configure logging to log to a file, making a new file at midnight and
     # keeping the last 3 day's data
-    # Give the logger a unique name (good practice)
     logger = logging.getLogger(__name__)
-    # Set the log level to LOG_LEVEL
     logger.setLevel(LOG_LEVEL)
-    # Make a handler that writes to a file, making a new file at midnight
-    # and keeping 3 backups
     handler = logging.handlers.TimedRotatingFileHandler(log_name,
                                                         when="midnight",
                                                         backupCount=3)
-    # Format each log message like this
     formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
-    # Attach the formatter to the handler
     handler.setFormatter(formatter)
-    # Attach the handler to the logger
     logger.addHandler(handler)
                 
     # Replace stdout with logging to file at INFO level
-    #sys.stdout = MyLogger(logger, logging.INFO)
+    sys.stdout = LoggerWriter(logger, logging.INFO)
     # Replace stderr with logging to file at ERROR level
-    #sys.stderr = MyLogger(logger, logging.ERROR)
+    sys.stderr = LoggerWriter(logger, logging.ERROR)
     return logger
 
 def get_init_time():
@@ -173,7 +163,7 @@ def run(monitor_list, killer):
             # let firefox start
             time.sleep(INIT_SLEEP)
             move_windows(monitor_list, firefox_procs)
-            ## spawn a thread for each display and start the repl there
+            # spawn a thread for each display and start the repl there
             for i in range(num_firefox):
                 t = threading.Thread(target=display_main, args=(i, firefox_to_queue[i], dead))
                 t.start()
@@ -195,12 +185,15 @@ def run(monitor_list, killer):
         logger.info("Threads finished")
 
 def query_for_requests(last_time, new_last_time, c):
-    if TEST_MODE:
-        c.execute(TEST_QUERY, (last_time, new_last_time,))
-    else:
-        c.execute(QUERY, (last_time,))
-    rows = c.fetchall()
-
+    rows = []
+    try:
+        if TEST_MODE:
+            c.execute(TEST_QUERY, (last_time, new_last_time,))
+        else:
+            c.execute(QUERY, (last_time,))
+        rows = c.fetchall()
+    except Exception, err:
+        logger.error("Sqlite error: %s", err)
     return rows
 
 def requests_to_queues(last_time, num_firefox, firefox_to_queue, c, rules):
@@ -225,15 +218,13 @@ def requests_to_queues(last_time, num_firefox, firefox_to_queue, c, rules):
     for request in rows:
         if request['ts'] > last_time:
             last_time = request['ts']
-        logger.debug("Potential request for %s from src ip %s", get_url(request), request['source'])
-        if request['source'] == MACHINE_IP:
-            # block tracking sites, malware, etc.
-            if not rules.should_block(get_url(request)):
-                # TODO: just hash user agent instead so that the router doesn't
-                # need to also run port-mirroring??
-                to_firefox = hash(request['user_agent']) % num_firefox
-                inter_lists[to_firefox].append(request)
-                logger.debug("Added request for %s to browswer %d", get_url(request), to_firefox)
+        url = get_url(request)
+        logger.debug("Potential request for %s from src ip %s", url, request['source'])
+        # TODO: change this conditonal if using port mirroring or not...
+        if is_wifi_request(request) and (not rules.should_block(url)) and can_show_url(url):
+            to_firefox = hash(request['user_agent']) % num_firefox
+            inter_lists[to_firefox].append(request)
+            logger.info("Added request for %s to browswer %d", url, to_firefox)
 
     # send lists
     for i in range(num_firefox):
@@ -249,6 +240,20 @@ def get_url(request):
     if url.startswith('wwww.'):
         url = url[1:]
     return "http://" + url
+
+def can_show_url(url):
+    res = urllib.urlopen(url)
+    http_message = res.info()
+    full = http_message.type # 'text/plain'
+    return full == HTML_MIME
+
+def is_wifi_request(request):
+    ip = request['source']
+    if PORT_MIRRORING:
+        result = not re.search(MACHINE_IP, ip) and not request['user_agent'] in IGNORE_USER_AGENTS
+    else:
+        result = re.search(MACHINE_IP, ip) and request['source_port'] == MACHINE_PROXY_PORT
+    return result
 
 def ip_to_subnet(ip):
     return ip.split(".")[3]
@@ -267,44 +272,50 @@ def display_main(firefox_num, queue, dead):
         current_entry = None
         change_url(mozrepl, DEFAULT_PAGE)
         logger.info(mozrepl.js("repl.whereAmI()"))
+        cycles_without_new = 0
         while not dead.is_set():
             new_entry = None
             try:
-                # get all the new entries in the queue
-                requests = queue.get(True, sleep_time()) # blocking call
-                logger.debug("thread %d requests %s", firefox_num, requests)
-                print requests
+                # TODO: change this to get no wait and then sleep, add user agent loop for display sleep time
+                requests = queue.get_nowait()
+                logger.debug("thread %d with %d requests", firefox_num, len(requests))
                 new_entry = find_best_entry(requests, current_entry)
-                
-                # todocheck document.readyState?
             except Queue.Empty:
                 logger.debug("thread %d queue empty", firefox_num)
-                current_entry = None
-                
+            
+            time_slept = 0
             if not (new_entry == None and current_entry == None):
-                # TODO: as a backup check the mime type of the requested url
-                # if bad, just wait
                 if new_entry:
                     url = get_url(new_entry)
                     user_agent = new_entry['user_agent']
                     logger.debug("thread %d new entry source: %s", firefox_num, 
                         new_entry['source'])
-                    print new_entry
+                    logger.debug("thread %d new entry user agent: %s", firefox_num, 
+                        user_agent)
+                    cycles_without_new = 0
                 else:
                     url = DEFAULT_PAGE
-                    user_agent = ""
+                    user_agent = None
+                    cycles_without_new = cycles_without_new + 1  
 
-                logger.info("Thread %d changing url to %s", firefox_num, url)
-                change_url(mozrepl, url)
-                # TODO: this is a hack we want to check that the page is loaded
-                # instead
-                # document.readyState === 'complete'
-                # but do we really care about it that much? no...
-                time.sleep(.1)
-                add_user_agent(mozrepl, user_agent)
-                time.sleep(2)
-                add_user_agent(mozrepl, user_agent)
-                current_entry = new_entry
+                if cycles_without_new == 0 or cycles_without_new > DISPLAY_CYCLES_NO_NEW_REQUESTS:
+                    logger.info("Thread %d changing url to %s", firefox_num, url)
+                    change_url(mozrepl, url)
+                    current_entry = new_entry
+                    if user_agent:
+                        logger.debug(page_complete(mozrepl))
+                        while (time_slept < sleep_time()) and (not page_complete(mozrepl)):
+                            logger.debug("thread %d url not ready", firefox_num)
+                            delta = 1
+                            time_slept = time_slept + delta
+                            time.sleep(delta)
+                            add_user_agent(mozrepl, user_agent)
+                        delta = 2
+                        time_slept = time_slept + delta
+                        time.sleep(delta)
+                        add_user_agent(mozrepl, user_agent)
+                        logger.debug("Thread %d added user agent %s", firefox_num, user_agent)
+            time.sleep(sleep_time() - time_slept)
 
     logger.info("Thread %d ending", firefox_num)
 
@@ -327,21 +338,33 @@ def find_best_entry(requests, old):
     else:
         return None
         
+def page_complete(mozrepl):
+    return 'complete' in mozrepl.js("document.readyState")
+
 def change_url(mozrepl, url):
     mozrepl.js("content.location.href = '%s'" % url)    
     
 def add_user_agent(mozrepl, user_agent):
     mozrepl.js("body = content.document.body")
+
     mozrepl.js("div = document.createElement('div')")
-    mozrepl.js("h1 = document.createElement('h1')")
-    mozrepl.js("h1.innerHTML = '%s'" % user_agent)
-    mozrepl.js("div.appendChild(h1)")
-    mozrepl.js("div.style.color = 'black'")
+    
+    mozrepl.js("div.style.all = 'initial'")    
     mozrepl.js("div.style.backgroundColor = 'white'")
-    mozrepl.js("div.style.fontSize = '40px'")
     mozrepl.js("div.style.zIndex = '99999999'")
     mozrepl.js("div.style.float = 'left'")
     mozrepl.js("div.style.position = 'absolute'")
+
+    mozrepl.js("h1 = document.createElement('h1')")
+    mozrepl.js("h1.style.all = 'initial'")
+    mozrepl.js("h1.style.fontSize = '4vw'")
+    mozrepl.js("h1.style.fontFamily = 'Arial'")
+    mozrepl.js("h1.style.color = 'black'")
+    
+
+    mozrepl.js("h1.innerHTML = '%s'" % user_agent)
+
+    mozrepl.js("div.appendChild(h1)")
     mozrepl.js("body.insertBefore(div, body.firstChild)")
 
 ### from https://stackoverflow.com/questions/18499497/how-to-process-sigterm-signal-gracefully
@@ -359,11 +382,23 @@ class DisplayDaemon(Daemon):
     def run(self):
             main()
 
+class LoggerWriter:
+    def __init__(self, logger, level): 
+        self.logger = logger
+        self.level = level 
+
+    def write(self, message):
+        if message != '\n':
+            self.logger.log(self.level, message)
+
+    def flush(self): 
+        pass
+
 # TODO: turn into a class and don't use this logger
 logger = create_logger(LOG_FILENAME)
 
 if __name__ == "__main__":
-    daemon = DisplayDaemon('/tmp/display_daemon.pid')
+    daemon = DisplayDaemon(PID_FILE)
     if len(sys.argv) == 2:
             if 'start' == sys.argv[1]:
                     daemon.start()
@@ -371,10 +406,12 @@ if __name__ == "__main__":
                     daemon.stop()
             elif 'restart' == sys.argv[1]:
                     daemon.restart()
+            elif 'run' == sys.argv[1]:
+                    daemon.run()
             else:
                     print "Unknown command"
                     sys.exit(2)
             sys.exit(0)
     else:
-            print "usage: %s start|stop|restart" % sys.argv[0]
+            print "usage: %s start|stop|restart|run" % sys.argv[0]
             sys.exit(2)

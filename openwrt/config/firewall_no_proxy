@@ -1,3 +1,4 @@
+
 config defaults
 	option syn_flood '1'
 	option input 'ACCEPT'
@@ -119,52 +120,6 @@ config rule
 	option dest_port '500'
 	option proto 'udp'
 	option target 'ACCEPT'
-
-# redirect lan http(s) traffic to 192.168.125 port 10000
-config redirect
-	option name 'http to proxy'
-	option src 'lan'
-	option src_ip '!192.168.1.125'
-	option src_dport '80'
-	option dest 'lan'
-	option dest_ip '192.168.1.125'
-	option dest_port '10000'
-	option proto 'tcpudp'
-	option target 'DNAT'
-
-# don't uncomment these lines
-# redirect https
-#config redirect
-#	option name 'https to proxy'
-#	option src 'lan'
-#	option src_ip '!192.168.1.125'
-#	option src_dport '443'
-#	option dest 'lan'
-#	option dest_ip '192.168.1.125'
-#	option dest_port '10000'
-#	option proto 'tcp'
-#	option target 'DNAT'
-
-config redirect
-	option name 'wan to proxy'
-	option dest 'lan'
-	option proto 'tcp'
-	option src_dip '192.168.1.1'
-	option dest_ip '192.168.1.125'
-	option dest_port '10000'
-	option target 'SNAT'
-
- #redirect dns requests to proxy
-config redirect
-	option name 'dns to proxy'
-	option src 'lan'
-	option proto 'tcpudp'
-	option src_ip '!192.168.1.125'
-	option src_dport '53'
-	option dest 'lan'
-	option dest_ip '192.168.1.125'
-	option dest_port '53'
-	option target 'DNAT'
 
 ## allow ssh access to 192.168.1.125
 config redirect
