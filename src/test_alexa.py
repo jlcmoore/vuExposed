@@ -2,20 +2,22 @@
 
 import random
 import socket
+import sys
 import time
 import threading
 import urllib2
 from user_agents import common_user_agents
 from no_https_hosts import top_1000_no_https_hosts
 
-DELAY = 5
+DELAY = 15
 ROUNDS = 1
 SOCKET_TIMEOUT = 2
-URLS_PER_ROUND = 5
+URLS_PER_ROUND = 50
 
-def main():
-	for i in range(ROUNDS):
-		for j in range(URLS_PER_ROUND):
+def main(rounds=ROUNDS, urls=URLS_PER_ROUND):
+	for i in range(rounds):
+                print "round number %d" % i
+		for j in range(urls):
 			user_agent = common_user_agents[random.randint(0, len(common_user_agents) - 1)]
 			url = top_1000_no_https_hosts[random.randint(0, len(top_1000_no_https_hosts) - 1)]
 			num = "%d %d" % (i, j)
@@ -36,4 +38,7 @@ def open_page(num, user_agent, url):
 		print '%s timeout' % num
 		
 if __name__ == "__main__":
-	main()
+        if len(sys.argv) > 1:
+                main(int(sys.argv[1]), int(sys.argv[2]))
+        else:
+	        main()
