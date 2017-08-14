@@ -49,7 +49,7 @@ h1, h2, h3, h4 {
 
 .img-overlay {
   background-color: #17234E;
-  background-image: url("../img/giphy.gif");
+  background-image: url("../img/displays.gif");
   filter: brightness(70%);
   position: absolute;
   width: 100%;
