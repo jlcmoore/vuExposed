@@ -79,9 +79,12 @@ https://www.sitepoint.com/accessible-footnotes-css/
   list-style: none;
 }
 
-
 .pad-container {
   padding-top: 130px;
+}
+
+.pad-container-responsive {
+  padding-top: 25vh;
 }
 
 .white-text {

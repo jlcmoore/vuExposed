@@ -8,7 +8,7 @@ config instance
   option network 'lan'
   #option gatewayname 'vuExposed'
   #option maxclients '20'
-  #option idletimeout '360'
+  option idletimeout '10'
 
   # Your router may have several interfaces, and you
   # probably want to keep them private from the network/gatewayinterface.

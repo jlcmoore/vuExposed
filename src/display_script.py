@@ -18,10 +18,12 @@ import re
 import signal
 import socket
 import sqlite3
+import ssl
 import subprocess
 import sys
 import threading
 import time
+import urllib
 import urllib2
 
 from adblockparser import AdblockRules
@@ -33,10 +35,10 @@ TMP_DIR = '/home/listen/Documents/vuExposed/display/'
 ACCEPTABLE_HTTP_STATUSES = [200, 201]
 BLOCK_FILES = ["block_lists/easylist.txt", "block_lists/unified_hosts_and_porn.txt"]
 DEFAULT_PAGE = "file:///home/listen/Documents/vuExposed/docs/monitor.html"
-DISPLAY_SLEEP = 10
-DISPLAY_CYCLES_NO_NEW_REQUESTS = 2
+DISPLAY_SLEEP = 5
+DISPLAY_CYCLES_NO_NEW_REQUESTS = 8
 DOCTYPE_PATTERN = re.compile(r"<!doctype html>", re.IGNORECASE)
-FILTER_LOAD_URL_TIMEOUT = .5
+FILTER_LOAD_URL_TIMEOUT = 2
 HTML_MIME = "text/html"
 IGNORE_USER_AGENTS = ['Python-urllib/1.17',
                       ('Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0)'
@@ -45,7 +47,7 @@ INIT_SLEEP = 5
 IS_PROXY = True
 LOCAL_IP_PATTERN = re.compile(r"192\.168\.1\.\d{1,3}")
 LOG_FILENAME = "listen.log"
-LOG_LEVEL = logging.DEBUG  # Could be e.g. "DEBUG" or "WARNING"
+LOG_LEVEL = logging.DEBUG  # Could be e.g. "DEBUG" or "WARNING
 MACHINE_IP = '192.168.1.125'
 MACHINE_PROXY_PORT = 10000
 MAX_MONITOR_LIST_URLS = 5
@@ -54,14 +56,17 @@ PID_FILE = 'display_daemon.pid'
 PORT_MIRRORING = True
 SQL_DATABASE = "/var/db/httptosql.sqlite"
 TABLE_NAME = "http"
-QUERY_NO_END = ("select ts, source, host, uri, user_agent,referrer, source_port, dest_port "
-                "from " + TABLE_NAME + " WHERE ts > ?")
+QUERY_NO_END = ("select ts, source, host, uri, user_agent,referrer, source_port, "
+                "dest_port from " + TABLE_NAME + " WHERE ts > ?")
 QUERY = QUERY_NO_END + ";"
 DELETE_QUERY = "delete from " + TABLE_NAME + " where ts < ?;"
 RULE_PATTERN = re.compile(r"(\d{1,3}\.){3}\d{1,3}\W([\w\-\d]+\.)+[\w\-\d]+")
 WAIT_AFTER_BOOT = 30
+WAIT_BETWEEN_FIREFOX_FAILS = 20
 
 TIME_FORMAT = "%Y/%m/%d %H:%M:%S"
+FILE_TIME_FORMAT = "%Y-%m-%d_%H:%M:%S"
+
 TEST_MODE = False
 TEST_DISPLAY_SLEEP = DISPLAY_SLEEP
 TEST_QUERY = QUERY_NO_END + " and ts < ?;"
@@ -106,11 +111,12 @@ def move_windows(monitor_list, procs, logger):
         pid = proc.pid
         window_id = get_window_id(pid)
         if not window_id:
-            logger.error("Could not get window id of firefox instance; dying")
-            sys.exit(1)
+            logger.error("Could not get window id of firefox instance; trying again")
+            return False
         monitor_counter = monitor_counter + 1
         logger.info("Moving %s to %s", window_id, geometry)
         subprocess.Popen(['wmctrl', '-ir', window_id, '-e', geometry])
+    return True
 
 def get_monitor_info(logger):
     """
@@ -138,7 +144,8 @@ def create_logger(log_name):
     the last five days of data
     """
     if os.path.isfile(log_name):
-        os.rename("old_" + log_name)
+        time = datetime.datetime.now().strftime(FILE_TIME_FORMAT)
+        os.rename(log_name, log_name + "." + time + ".old")
     log = logging.getLogger(__name__)
     log.setLevel(LOG_LEVEL)
     handler = logging.handlers.TimedRotatingFileHandler(log_name,
@@ -186,10 +193,10 @@ def start_display(init_sleep):
     from sqlite database.
     """
     logger = create_logger(TMP_DIR + LOG_FILENAME)
-    logger.info('Started')
-    killer = GracefulKiller()
-    monitor_list = get_monitor_info(logger)
     dead = threading.Event()
+    killer = GracefulKiller(dead)
+    logger.info('Started')
+    monitor_list = get_monitor_info(logger)
     firefox_procs = []
     threads = []
     num_firefox = len(monitor_list)
@@ -198,29 +205,25 @@ def start_display(init_sleep):
     try:
         last_time = get_init_time()
         rules = get_rules()
-
+        
         logger.info("Starting up firefox instances")
+
         firefox_to_queue = dict()
         for i in range(num_firefox):
-            firefox_procs.append(subprocess.Popen(["firefox", "-no-remote", "-P",
-                                                   ("display_%d" % i)],
-                                                  preexec_fn=os.setsid, stdout=subprocess.PIPE))
             firefox_to_queue[i] = Queue.Queue()
-
-        # let firefox start
-        time.sleep(INIT_SLEEP)
-        move_windows(monitor_list, firefox_procs, logger)
-
+        
+        firefox_procs = setup_browsers(num_firefox, firefox_procs, monitor_list, logger)
+        logger.info("Browsers setup")
         # spawn a thread for each display
         for i in range(num_firefox):
-            thread = threading.Thread(target=display_main, args=(i, firefox_to_queue[i], dead,
-                                                                 logger))
+            thread = threading.Thread(target=display_main, args=(i, firefox_to_queue[i],
+                                                                 dead, logger))
             thread.start()
             threads.append(thread)
 
-        while not killer.kill_now:
-            last_time = requests_to_queues(last_time, num_firefox, firefox_to_queue, rules,
-                                           logger)
+        while not dead.is_set():
+            last_time = requests_to_queues(last_time, num_firefox, firefox_to_queue,
+                                           rules, logger)
             time.sleep(sleep_time())
             # how do we delete things from the sqlite database?
     finally:
@@ -228,11 +231,32 @@ def start_display(init_sleep):
         logger.info("Terminated main loop")
         for thread in threads:
             thread.join()
-        for firefox in firefox_procs:
-            os.killpg(os.getpgid(firefox.pid), signal.SIGTERM)
+        kill_firefox(firefox_procs)
         logger.info("Finished waiting for threads")
         logger.info("Threads finished")
         logger.info('Finished')
+
+def setup_browsers(firefox_num, firefox_procs, monitor_list, logger):
+    in_position = False
+    while not in_position:
+        for i in range(firefox_num):
+            logger.info("Trying to create firefox instances and move them")
+            firefox_procs.append(subprocess.Popen(["firefox", "-no-remote", "-P",
+                                                   ("display_%d" % i)],
+                                                  preexec_fn=os.setsid,
+                                                  stdout=subprocess.PIPE))
+            # let firefox start
+            time.sleep(INIT_SLEEP)
+            in_position = move_windows(monitor_list, firefox_procs, logger)
+            if not in_position:
+                kill_firefox(firefox_procs)
+                firefox_procs = []
+                time.sleep(WAIT_BETWEEN_FIREFOX_FAILS)
+    return firefox_procs
+
+def kill_firefox(firefox_procs):
+    for firefox in firefox_procs:
+        os.killpg(os.getpgid(firefox.pid), signal.SIGTERM)
 
 def query_for_requests(last_time, new_last_time, logger):
     """
@@ -293,8 +317,9 @@ def requests_to_queues(last_time, num_firefox, firefox_to_queue, rules, logger):
         if request['ts'] > last_time:
             last_time = request['ts']
         url = get_url(request)
+        logger.debug("Potential request for %s", url)
         if is_wifi_request(request) and not rules.should_block(url):
-            logger.debug("Potential request for %s from src ip %s", url, request['source'])
+            logger.debug("Valid wifi and non-blocked request for %s from src ip %s", url, request['source'])
             to_firefox = hash(request['user_agent']) % num_firefox
             if len(inter_lists[to_firefox]) < MAX_MONITOR_LIST_URLS and can_show_url(url, logger):
                 inter_lists[to_firefox].append(request)
@@ -312,7 +337,8 @@ def get_url(request):
     """
     For the sqlite request with 'host' and 'uri' returns url
     """
-    url = request['host'] + request['uri']
+    url = request['host'] + urllib.quote(request['uri'])
+    # hack to deal with mitmf
     if url.startswith('wwww.'):
         url = url[1:]
     return "http://" + url
@@ -329,10 +355,9 @@ def can_show_url(url, logger):
         if full == HTML_MIME and code in ACCEPTABLE_HTTP_STATUSES:
             data = res.read()
             return re.search(DOCTYPE_PATTERN, data)
-    except (urllib2.HTTPError, urllib2.URLError) as error:
+    except (urllib2.HTTPError, urllib2.URLError,
+            socket.timeout, socket.error, ssl.SSLError) as error:
         logger.debug('url open error for %s, error: %s', url, error)
-    except socket.timeout:
-        logger.debug('socket timed out for url %s', url)
     return False
 
 def is_wifi_request(request):
@@ -484,13 +509,15 @@ def add_user_agent(mozrepl, user_agent):
     mozrepl.js("div.style.zIndex = '99999999'")
     mozrepl.js("div.style.float = 'left'")
     mozrepl.js("div.style.position = 'absolute'")
+    mozrepl.js("div.style.top = '20px'")
+    mozrepl.js("div.style.left = '20px'")
+    mozrepl.js("div.style.backgroundColor = 'black'")
 
     mozrepl.js("h1 = document.createElement('h1')")
     mozrepl.js("h1.style.all = 'initial'")
     mozrepl.js("h1.style.fontSize = '4vw'")
     mozrepl.js("h1.style.fontFamily = 'Arial'")
-    mozrepl.js("h1.style.color = 'black'")
-
+    mozrepl.js("h1.style.color = 'white'")
 
     mozrepl.js("h1.innerHTML = '%s'" % user_agent)
 
@@ -503,8 +530,8 @@ class GracefulKiller(object):
     Originally from
     https://stackoverflow.com/questions/18499497/how-to-process-sigterm-signal-gracefully
     """
-    kill_now = False
-    def __init__(self):
+    def __init__(self, event):
+        self.dead = event
         signal.signal(signal.SIGINT, self.exit_gracefully)
         signal.signal(signal.SIGTERM, self.exit_gracefully)
 
@@ -512,7 +539,7 @@ class GracefulKiller(object):
         """
         Signal received, flag death
         """
-        self.kill_now = True
+        self.dead.set()
 
 class DisplayDaemon(Daemon):
     """
