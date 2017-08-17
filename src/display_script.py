@@ -36,8 +36,9 @@ ACCEPTABLE_HTTP_STATUSES = [200, 201]
 BLOCK_FILES = ["block_lists/easylist.txt", "block_lists/unified_hosts_and_porn.txt"]
 DEFAULT_PAGE = "file:///home/listen/Documents/vuExposed/docs/monitor.html"
 DISPLAY_SLEEP = 5
-DISPLAY_CYCLES_NO_NEW_REQUESTS = 8
-DOCTYPE_PATTERN = re.compile(r"<!doctype html>", re.IGNORECASE)
+DISPLAY_TIME_NO_NEW_REQUESTS = 120
+DISPLAY_CYCLES_NO_NEW_REQUESTS = int(DISPLAY_TIME_NO_NEW_REQUESTS / DISPLAY_SLEEP)
+DOCTYPE_PATTERN = re.compile(r"!doctype html", re.IGNORECASE)
 FILTER_LOAD_URL_TIMEOUT = 2
 HTML_MIME = "text/html"
 IGNORE_USER_AGENTS = ['Python-urllib/1.17',
@@ -352,7 +353,8 @@ def can_show_url(url, logger):
         http_message = res.info()
         full = http_message.type # 'text/plain'
         code = res.getcode()
-        if full == HTML_MIME and code in ACCEPTABLE_HTTP_STATUSES:
+        # make sure there was not a redirect, that it is html, and the page was accepted
+        if res.geturl() == url and full == HTML_MIME and code in ACCEPTABLE_HTTP_STATUSES:
             data = res.read()
             return re.search(DOCTYPE_PATTERN, data)
     except (urllib2.HTTPError, urllib2.URLError,
