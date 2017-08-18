@@ -10,7 +10,7 @@
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link href="https://fonts.googleapis.com/css?family=Oswald" rel="stylesheet">
-        <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css?family=Lato:300,400" rel="stylesheet">
         <link rel="stylesheet" href="css/bootstrap.min.css">
         <link rel="stylesheet" href="css/main.css">
 
@@ -22,15 +22,18 @@
         <![endif]-->
 
     <nav class="navbar nav_vu center navbar-default navbar-static-top" role="navigation">
-      <div class="navbar-inner">
-      <div class="container">
-        <ul class="nav nav-pills navbar-text">
-          <li role="presentation"><a class="navbar-link" href="index.html">vuExposed</a></li>
-          <li role="presentation"><a class="navbar-link" href="description.html">description</a></li>
-          <li role="presentation"><a class="navbar-link" href="protection.html">protection</a></li>
-        </ul>
-       
-      </div>
+      <div class="container-fluid">
+        <div class="navbar-inner">
+          <ul class="nav nav-pills navbar-text">
+            <li role="presentation">
+              <a id="logo" class="navbar-brand" href="index.html">
+                   <img class="img-rounded" alt="vuExposed" src="img/logo.png">
+              </a>
+            </li>
+            <li role="presentation"><a class="navbar-link" href="description.html">description</a></li>
+            <li role="presentation"><a class="navbar-link" href="protection.html">protection</a></li>
+          </ul>
+        </div>
       </div>
     </nav>
 
@@ -44,7 +47,7 @@
           </div>
           <h3 id="vulnerability">Vulnerability and Background</h3>
           <p>
-          The hypertext transmission protocol (HTTP) defines a standard for communication on the web, which, by default, is not encrypted. That means anyone capable of viewing network traffic (an internet service provider, another person on the same WIFI network, or those snooping on other parts of the network – spy agencies) can potentially read and modify content passed only on HTTP. Nevertheless, much of the web (particularly larger companies and those handling sensitive information) has moved to the HTTPS (secure) protocol, which defines an encryption standard.
+          The hypertext transmission protocol (<a href="https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol">HTTP</a>) defines a standard for communication on the web, which, by default, is not encrypted. That means anyone capable of viewing network traffic (an internet service provider, another person on the same <a href="https://en.wikipedia.org/wiki/Wi-Fi">WIFI</a> network, or those snooping on other parts of the network – spy agencies) can potentially read and modify content passed only on HTTP. Nevertheless, much of the web (particularly larger companies and those handling sensitive information) has moved to the HTTPS (secure) protocol, which defines an encryption standard.
           </p>
           <p>
           Some of those sites that only offer HTTP or that do not default to HTTPS can reveal sensitive data or personally identifying information (PII) (Miller). For example, WebMD is the second most popular health website, but does not offer HTTPS (Narayanan). This exposes potentially sensitive medical information which can be very valuable in terms of ad revenue (Leichenko). Significant work also shows that meta data in HTTPS connections can leak identifying information (Danezis). The content of HTTPS pages is encrypted over the web, but the root destination address is not. That is to say, a network attacker could determine that a particular user is navigating to a pornography site, even if that connection is encrypted with HTTPS.
@@ -60,6 +63,16 @@
           <p>
           A user passing through the space notices the installation. Reading the default pages display on the monitors, she becomes intrigued and connects to the WIFI network with her phone thus consenting to the terms of use. She explores some of the examples, navigating to unencrypted sites like WebMD and sees her traffic captured on the displays. She then navigates to some encrypted sites (like Google or a bank website) and notices that her traffic is not captured – the display is unable to show an encrypted page. Now she understands a bit more about encryption and follows up with the resources detailed in this website to learn more and better <a href="protection.html">protect herself</a> on the web (for instance by using HTTPS Everywhere from the EFF).
           </p>
+          <p>
+          See the <a href="description.html">description page</a> for a video demonstrating one example. 
+          </p>
+
+          <div class="story-item">
+            <div class="embed-responsive embed-responsive-16by9">
+              <img alt="displays" src="img/displays_long_small.png"/ >
+            </div>
+            <p> The displays (and creator) in the Wond'ry</p>
+          </div>
 
           <h3 id="goals">Goals</h3>
           <p>
@@ -68,18 +81,12 @@
 
           <h3 id="legal">Legal and Ethical</h3>
           <p>
-          Conducting this sort of traffic sniffing is not illegal, but people are uncomfortable with the idea of the installation. The WIFI network serves a captive portal when users attempt to join (similar to the type one might encounter in a coffee shop) which forces users to consent. The work of Sicker et al. suggests that this is sufficient legal backing. 
-          </p>
-          <p>
-          I am in the process of getting in touch with the institutional review board (IRB) at the University of Washington to approve this project to be used as research. I would also like to conduct a more formal study (in a measurable and quantitative sense) of user reactions to the space, but that is dependent on IRB approval and if I have time after the implementation of the installation.
-          </p>
-          <p>
-          I am also in the process of seeking advice from lawyers with the Electronic Frontier Foundation to double check my work.
+          Conducting this sort of traffic sniffing is not illegal, but people are uncomfortable with the idea of the installation. The WIFI network serves a captive portal when users attempt to join (similar to the type one might encounter in a coffee shop) which forces users to consent. The work of Sicker et al. suggests that this is sufficient legal backing.
           </p>
 
           <h3 id="summation">Summation</h3>
           <p>
-          This network vulnerability does not just expose locality-based attacks to harvest user information (Butler) which have become increasingly less viable in recent years, but also presents the internet to users in a way they understand (physical location, WIFI, and, to a lesser extent, routers). In providing an interactive exemplification of one threat I hope to guide users to a base of understanding. With this site, I extend this framework to areas which users may not understand as well (like ISPs, network attackers, even websites — actors who have access to user data). In this way, the tangible WIFI vulnerability becomes a vehicle to teach lay users about threat modeling.
+          This network vulnerability does not just expose locality-based attacks to harvest user information (Butler) which have become increasingly less viable in recent years, but also presents the internet to users in a way they understand (physical location, WIFI, and, to a lesser extent, routers). In providing an interactive exemplification of one threat I hope to guide users to a base of understanding. With this site, I extend this framework to areas which users may not understand as well (like <a href="https://en.wikipedia.org/wiki/Internet_service_provider">ISPs</a>, network attackers, even websites — actors who have access to user data). In this way, the tangible WIFI vulnerability becomes a vehicle to teach lay users about threat modeling.
           </p>
           <p>
           The majority of web traffic may be over HTTPS, but work from Narayanan and others shows that this underestimates the problem. Furthermore, Miller and Danezis have shown a significant amount of personal identifying information can be inferred even over HTTPS. Multiple studies (like that of Englehardt) have shown that web trackers and advertisers can also accumulate massive amounts of user data. I clearly will not be able to deeply inform users about all of these issues, but I hope to scare them a little bit and allow for greater exploration.
