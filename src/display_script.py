@@ -338,7 +338,7 @@ def get_url(request):
     """
     For the sqlite request with 'host' and 'uri' returns url
     """
-    url = request['host'] + urllib.quote(request['uri'])
+    url = request['host'] + urllib.quote(request['uri'].encode('utf-8'))
     # hack to deal with mitmf
     if url.startswith('wwww.'):
         url = url[1:]
