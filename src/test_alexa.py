@@ -2,6 +2,7 @@
 
 import random
 import socket
+import ssl
 import sys
 import time
 import threading
@@ -11,10 +12,10 @@ from no_https_hosts import top_1000_no_https_hosts
 
 DELAY = 15
 ROUNDS = 1
-SOCKET_TIMEOUT = 2
+SOCKET_TIMEOUT = 1
 URLS_PER_ROUND = 50
 
-def main(rounds=ROUNDS, urls=URLS_PER_ROUND):
+def main(rounds=ROUNDS, urls=URLS_PER_ROUND, delay=DELAY):
 	for i in range(rounds):
                 print "round number %d" % i
 		for j in range(urls):
@@ -32,13 +33,11 @@ def open_page(num, user_agent, url):
 		opener.addheaders = [('User-Agent', user_agent)]
 		opener.open(url)
 		print '%s opened %s' % (num, url)
-	except (urllib2.HTTPError, urllib2.URLError) as error:
+	except (urllib2.HTTPError, urllib2.URLError, ssl.SSLError, socket.error, socket.timeout) as error:
 		print '%s url %s open error: %s' % (num, url, error)
-	except socket.timeout:
-		print '%s timeout' % num
 		
 if __name__ == "__main__":
         if len(sys.argv) > 1:
-                main(int(sys.argv[1]), int(sys.argv[2]))
+                main(int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]))
         else:
 	        main()

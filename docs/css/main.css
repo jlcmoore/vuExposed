@@ -47,10 +47,28 @@ h1, h2, h3, h4 {
   max-width: 100vw;
 }
 
+.background-video {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  z-index: -100;
+  -webkit-transform: translateX(-50%) translateY(-50%);
+  transform: translateX(-50%) translateY(-50%);
+  background: url("../img/displays.gif") no-repeat;
+  background-size: cover;
+}
+
+.filter {
+  filter: brightness(70%);
+}
+
 .img-overlay {
   background-color: #17234E;
   background-image: url("../img/displays.gif");
-  filter: brightness(70%);
   position: absolute;
   width: 100%;
   height: inherit;
@@ -67,16 +85,15 @@ h1, h2, h3, h4 {
   background-size: cover;
 }
 
-/* footnotes from
-https://www.sitepoint.com/accessible-footnotes-css/
-*/
 #footnotes li {
-  margin: 0 0 .5em 2em;
-  text-indent: -2em ;
+  margin: 0 0 .5em 1em;
+  text-indent: -1em ;
 }
 
 #footnotes {
   list-style: none;
+  padding-left: 0em;
+  font-size: 10pt;
 }
 
 .pad-container {
@@ -103,6 +120,11 @@ https://www.sitepoint.com/accessible-footnotes-css/
   padding: 20px;
 }
 
+.story-item p{
+  font-weight: 300;
+  font-size: 10pt;
+}
+
 .story-quote {
   padding-left: 20px;
   padding-right: 30px;
@@ -111,7 +133,6 @@ https://www.sitepoint.com/accessible-footnotes-css/
 body {
   font-size: 12pt;
   font-family: 'Lato', sans-serif;
-  
 }
 
 p, li {
@@ -147,38 +168,50 @@ footer p {
   font-size: 15px;
 }
 
-
 .navbar .container {
   padding-right: 0px;
   padding-left: 0px;
 }
 
+#logo {
+  padding: 0;
+}
+
+.navbar-brand {
+  line-height: inherit;
+}
+
+.navbar-brand>img {
+  height: 100%;
+  width: auto;
+}
+
 .center.navbar .nav,
 .center.navbar .nav > li {
- float:none;
-    display:inline-block;
-    *display:inline; /* ie7 fix */
-    *zoom:1; /* hasLayout ie7 trigger */
-    vertical-align: top;
+  float:none;
+  display:inline-block;
+  *display:inline; /* ie7 fix */
+  *zoom:1; /* hasLayout ie7 trigger */
+  vertical-align: top;
 }
 
 @media ( min-width:700px ) {
-    .row-sm-flex-center {
-        display:flex;
-        align-items:center;
-    }
+  .row-sm-flex-center {
+    display:flex;
+    align-items:center;
+  }
 }
 @media ( min-width: 992px ) {
-    .row-md-flex-center {
-        display:flex;
-        align-items:center;
-    }
+  .row-md-flex-center {
+    display:flex;
+    align-items:center;
+  }
 }
 @media ( min-width: 1200px ) {
-    .row-lg-flex-center {
-        display:flex;
-        align-items:center;
-    }
+  .row-lg-flex-center {
+    display:flex;
+    align-items:center;
+  }
 }
 /* end */
 
