@@ -14,6 +14,7 @@ import logging
 import logging.handlers
 import os
 import Queue
+import random
 import re
 import signal
 import socket
@@ -34,7 +35,9 @@ from daemon import Daemon
 TMP_DIR = '/home/listen/Documents/vuExposed/display/'
 ACCEPTABLE_HTTP_STATUSES = [200, 201]
 BLOCK_FILES = ["block_lists/easylist.txt", "block_lists/unified_hosts_and_porn.txt"]
-DEFAULT_PAGE = "file:///home/listen/Documents/vuExposed/docs/monitor.html"
+DEFAULT_PAGE_DIR = "file:///home/listen/Documents/vuExposed/docs/"
+DEFAULT_PAGE = DEFAULT_PAGE_DIR + "monitor.html"
+DEFAULT_PAGE_VIDEO = DEFAULT_PAGE_DIR + "video.html"
 DISPLAY_SLEEP = 5
 DISPLAY_TIME_NO_NEW_REQUESTS = 120
 DISPLAY_CYCLES_NO_NEW_REQUESTS = int(DISPLAY_TIME_NO_NEW_REQUESTS / DISPLAY_SLEEP)
@@ -67,6 +70,8 @@ WAIT_BETWEEN_FIREFOX_FAILS = 20
 
 TIME_FORMAT = "%Y/%m/%d %H:%M:%S"
 FILE_TIME_FORMAT = "%Y-%m-%d_%H:%M:%S"
+
+VIDEO_LIKLIHOOD = .66
 
 TEST_MODE = False
 TEST_DISPLAY_SLEEP = DISPLAY_SLEEP
@@ -145,8 +150,8 @@ def create_logger(log_name):
     the last five days of data
     """
     if os.path.isfile(log_name):
-        time = datetime.datetime.now().strftime(FILE_TIME_FORMAT)
-        os.rename(log_name, log_name + "." + time + ".old")
+        now = datetime.datetime.now().strftime(FILE_TIME_FORMAT)
+        os.rename(log_name, log_name + "." + now + ".old")
     log = logging.getLogger(__name__)
     log.setLevel(LOG_LEVEL)
     handler = logging.handlers.TimedRotatingFileHandler(log_name,
@@ -195,7 +200,7 @@ def start_display(init_sleep):
     """
     logger = create_logger(TMP_DIR + LOG_FILENAME)
     dead = threading.Event()
-    killer = GracefulKiller(dead)
+    GracefulKiller(dead)
     logger.info('Started')
     monitor_list = get_monitor_info(logger)
     firefox_procs = []
@@ -206,13 +211,13 @@ def start_display(init_sleep):
     try:
         last_time = get_init_time()
         rules = get_rules()
-        
+
         logger.info("Starting up firefox instances")
 
         firefox_to_queue = dict()
         for i in range(num_firefox):
             firefox_to_queue[i] = Queue.Queue()
-        
+
         firefox_procs = setup_browsers(num_firefox, firefox_procs, monitor_list, logger)
         logger.info("Browsers setup")
         # spawn a thread for each display
@@ -238,6 +243,12 @@ def start_display(init_sleep):
         logger.info('Finished')
 
 def setup_browsers(firefox_num, firefox_procs, monitor_list, logger):
+    """
+    Create a firefox proceces for each of the monitors in monitor_list
+    up to firefox_num and move the window to the assigned monitor. Tries
+    until windows are successfully moved.
+    Returns the process ids in firefox_procs
+    """
     in_position = False
     while not in_position:
         for i in range(firefox_num):
@@ -256,6 +267,9 @@ def setup_browsers(firefox_num, firefox_procs, monitor_list, logger):
     return firefox_procs
 
 def kill_firefox(firefox_procs):
+    """
+    Kills the processces corresponding to those in firefox_procs
+    """
     for firefox in firefox_procs:
         os.killpg(os.getpgid(firefox.pid), signal.SIGTERM)
 
@@ -320,7 +334,8 @@ def requests_to_queues(last_time, num_firefox, firefox_to_queue, rules, logger):
         url = get_url(request)
         logger.debug("Potential request for %s", url)
         if is_wifi_request(request) and not rules.should_block(url):
-            logger.debug("Valid wifi and non-blocked request for %s from src ip %s", url, request['source'])
+            logger.debug("Valid wifi and non-blocked request for %s from src ip %s",
+                         url, request['source'])
             to_firefox = hash(request['user_agent']) % num_firefox
             if len(inter_lists[to_firefox]) < MAX_MONITOR_LIST_URLS and can_show_url(url, logger):
                 inter_lists[to_firefox].append(request)
@@ -384,6 +399,16 @@ def sleep_time():
         return TEST_DISPLAY_SLEEP
     return DISPLAY_SLEEP
 
+def choose_default_page():
+    """
+    Randomly returns either DEFAULT_PAGE_VIDEO or DEFAULT_PAGE
+    with a VIDEO_LIKLIHOOD bias towards DEFAULT_PAGE_VIDEO
+    """
+    val = random.random()
+    if val < VIDEO_LIKLIHOOD:
+        return DEFAULT_PAGE_VIDEO
+    return DEFAULT_PAGE
+
 # thread main
 def display_main(firefox_num, queue, dead, logger):
     """
@@ -397,7 +422,7 @@ def display_main(firefox_num, queue, dead, logger):
     # Create repl to control firefox instance
     with Mozrepl(port=port) as mozrepl:
         current_entry = None
-        change_url(mozrepl, DEFAULT_PAGE)
+        change_url(mozrepl, choose_default_page())
         logger.info(mozrepl.js("repl.whereAmI()"))
         cycles_without_new = 0
         while True:
@@ -424,7 +449,7 @@ def display_main(firefox_num, queue, dead, logger):
                     cycles_without_new = 0
                 else:
                     # change to default page
-                    url = DEFAULT_PAGE
+                    url = choose_default_page()
                     user_agent = None
                     cycles_without_new = cycles_without_new + 1
 
@@ -582,7 +607,7 @@ def main():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("command", choices=("start", "stop", "restart", "run"))
-    parser.add_argument("-i", "--init_sleep", type=int, help="initial sleep", 
+    parser.add_argument("-i", "--init_sleep", type=int, help="initial sleep",
                         required=False)
     args = parser.parse_args()
     if args.init_sleep is None:
@@ -605,4 +630,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-        
