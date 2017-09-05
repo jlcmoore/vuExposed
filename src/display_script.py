@@ -44,10 +44,10 @@ DISPLAY_CYCLES_NO_NEW_REQUESTS = int(DISPLAY_TIME_NO_NEW_REQUESTS / DISPLAY_SLEE
 DOCTYPE_PATTERN = re.compile(r"!doctype html", re.IGNORECASE)
 FILTER_LOAD_URL_TIMEOUT = 2
 HTML_MIME = "text/html"
-IGNORE_USER_AGENTS = ['Python-urllib/1.17',
-                      ('Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:54.0)'
-                       ' Gecko/20100101 Firefox/54.0')]
-INIT_SLEEP = 5
+IGNORE_USER_AGENTS = [r"Python-urllib\/\d+\.\d+",
+                      (r"Mozilla\/\d+\.\d+ \(X11; Ubuntu; Linux x86_64; rv:\d+\.\d+\) "
+                       r"Gecko\/20100101 Firefox\/\d+\.\d+")]
+INIT_SLEEP = 3
 IS_PROXY = True
 LOCAL_IP_PATTERN = re.compile(r"192\.168\.1\.\d{1,3}")
 LOG_FILENAME = "listen.log"
@@ -65,8 +65,8 @@ QUERY_NO_END = ("select ts, source, host, uri, user_agent,referrer, source_port,
 QUERY = QUERY_NO_END + ";"
 DELETE_QUERY = "delete from " + TABLE_NAME + " where ts < ?;"
 RULE_PATTERN = re.compile(r"(\d{1,3}\.){3}\d{1,3}\W([\w\-\d]+\.)+[\w\-\d]+")
-WAIT_AFTER_BOOT = 30
-WAIT_BETWEEN_FIREFOX_FAILS = 20
+WAIT_AFTER_BOOT = 15
+WAIT_BETWEEN_FIREFOX_FAILS = 1
 
 TIME_FORMAT = "%Y/%m/%d %H:%M:%S"
 FILE_TIME_FORMAT = "%Y-%m-%d_%H:%M:%S"
@@ -200,6 +200,7 @@ def start_display(init_sleep):
     """
     logger = create_logger(TMP_DIR + LOG_FILENAME)
     dead = threading.Event()
+    restart = threading.Event()
     killer = GracefulKiller(dead)
     logger.info('Started')
     monitor_list = get_monitor_info(logger)
@@ -224,7 +225,7 @@ def start_display(init_sleep):
             # spawn a thread for each display
             for i in range(num_firefox):
                 thread = threading.Thread(target=display_main, args=(i, firefox_to_queue[i],
-                                                                     dead, logger))
+                                                                     dead, restart, logger))
                 thread.start()
                 threads.append(thread)
 
@@ -242,6 +243,9 @@ def start_display(init_sleep):
         logger.info("Finished waiting for threads")
         logger.info("Threads finished")
         logger.info('Finished')
+        logging.shutdown()
+        if restart.is_set():
+            os.execvp("display_start.sh", ["display_start.sh"])
 
 def setup_browsers(firefox_num, firefox_procs, monitor_list, dead, logger):
     """
@@ -252,19 +256,19 @@ def setup_browsers(firefox_num, firefox_procs, monitor_list, dead, logger):
     """
     in_position = False
     while not in_position and not dead.is_set():
+        logger.info("Trying to create firefox instances and move them")
         for i in range(firefox_num):
-            logger.info("Trying to create firefox instances and move them")
             firefox_procs.append(subprocess.Popen(["firefox", "-no-remote", "-P",
                                                    ("display_%d" % i)],
                                                   preexec_fn=os.setsid,
                                                   stdout=subprocess.PIPE))
-            # let firefox start
-            time.sleep(INIT_SLEEP)
-            in_position = move_windows(monitor_list, firefox_procs, logger)
-            if not in_position:
-                kill_firefox(firefox_procs)
-                firefox_procs = []
-                time.sleep(WAIT_BETWEEN_FIREFOX_FAILS)
+        # let firefox start
+        time.sleep(INIT_SLEEP)
+        in_position = move_windows(monitor_list, firefox_procs, logger)
+        if not in_position:
+            kill_firefox(firefox_procs)
+            firefox_procs = []
+            time.sleep(WAIT_BETWEEN_FIREFOX_FAILS)
     return firefox_procs
 
 def kill_firefox(firefox_procs):
@@ -385,8 +389,9 @@ def is_wifi_request(request):
     """
     ip = request['source']
     if PORT_MIRRORING:
-        result = (not re.search(MACHINE_IP, ip) and
-                  not request['user_agent'] in IGNORE_USER_AGENTS)
+        result = (not re.search(MACHINE_IP, ip))
+        for agent in IGNORE_USER_AGENTS:
+            result &= not re.search(agent, request['user_agent'])
     else:
         result = (re.search(MACHINE_IP, ip) and
                   request['source_port'] == MACHINE_PROXY_PORT)
@@ -411,80 +416,87 @@ def choose_default_page():
     return DEFAULT_PAGE
 
 # thread main
-def display_main(firefox_num, queue, dead, logger):
+def display_main(firefox_num, queue, dead, restart, logger):
     """
     Thread main for the firefox handling threads.
     Waits to receive well formatted urls from the main process
     through queue and sends them the handled firefox instance
     Finishes when dead.is_set()
     """
-    logger.info("Thread %d starting", firefox_num)
-    port = DEFAULT_PORT + firefox_num
-    # Create repl to control firefox instance
-    with Mozrepl(port=port) as mozrepl:
-        current_entry = None
-        change_url(mozrepl, choose_default_page())
-        logger.info(mozrepl.js("repl.whereAmI()"))
-        cycles_without_new = 0
-        while True:
-            new_entry = None
-            try:
-                # get urls from the main thread
-                requests = queue.get_nowait()
-                logger.debug("thread %d with %d requests", firefox_num, len(requests))
-                new_entry = find_best_entry(requests, current_entry)
-            except Queue.Empty:
+    try:
+        logger.info("Thread %d starting", firefox_num)
+        port = DEFAULT_PORT + firefox_num
+        # Create repl to control firefox instance
+        with Mozrepl(port=port) as mozrepl:
+            current_entry = None
+            change_url(mozrepl, choose_default_page())
+            logger.info(mozrepl.js("repl.whereAmI()"))
+            cycles_without_new = 0
+            while True:
                 new_entry = None
-                logger.debug("thread %d queue empty", firefox_num)
+                try:
+                    # get urls from the main thread
+                    requests = queue.get_nowait()
+                    logger.debug("thread %d with %d requests", firefox_num, len(requests))
+                    new_entry = find_best_entry(requests, current_entry)
+                except Queue.Empty:
+                    new_entry = None
+                    logger.debug("thread %d queue empty", firefox_num)
 
-            time_slept = 0
-            # if the url should be changed
-            if not (new_entry is None and current_entry is None):
-                
-                if new_entry:
-                    # change to requested page
-                    url = get_url(new_entry)
-                    user_agent = get_nice_user_agent(new_entry['user_agent'])
-                    logger.debug("thread %d new entry source: %s", firefox_num,
-                                 new_entry['source'])
-                    logger.debug("thread %d new entry user agent: %s", firefox_num,
-                                 user_agent)
-                    cycles_without_new = 0
-                else:
-                    # change to default page
-                    url = choose_default_page()
-                    user_agent = None
-                    cycles_without_new = cycles_without_new + 1
-                    
-                log.debug("Thread %d %d cycles without new", firefox_num, cycles_without_new)
-                # if we should change
-                # (that is, if we have waited enough cycles to go back to default)
-                if cycles_without_new == 0 or cycles_without_new > DISPLAY_CYCLES_NO_NEW_REQUESTS:
-                    logger.info("Thread %d changing url to %s", firefox_num, url)
-                    change_url(mozrepl, url)
-                    current_entry = new_entry
-                    if user_agent:
-                        # try to add the user agent to the page, waiting for when the page loads
-                        logger.debug(page_complete(mozrepl))
-                        while (not dead.is_set() and (time_slept < sleep_time()) and
-                               (not page_complete(mozrepl))):
-                            logger.debug("thread %d url not ready", firefox_num)
-                            delta = 1
+                time_slept = 0
+                # if the url should be changed
+                if not (new_entry is None and current_entry is None):
+
+                    if new_entry:
+                        # change to requested page
+                        url = get_url(new_entry)
+                        user_agent = get_nice_user_agent(new_entry['user_agent'])
+                        logger.debug("thread %d new entry source: %s", firefox_num,
+                                     new_entry['source'])
+                        logger.debug("thread %d new entry user agent: %s", firefox_num,
+                                     user_agent)
+                        cycles_without_new = 0
+                    else:
+                        # change to default page
+                        url = choose_default_page()
+                        user_agent = None
+                        cycles_without_new = cycles_without_new + 1
+
+                        logger.debug("Thread %d %d cycles without new", firefox_num, cycles_without_new)
+                    # if we should change
+                    # (that is, if we have waited enough cycles to go back to default)
+                    if cycles_without_new == 0 or cycles_without_new > DISPLAY_CYCLES_NO_NEW_REQUESTS:
+                        logger.info("Thread %d changing url to %s", firefox_num, url)
+                        change_url(mozrepl, url)
+                        current_entry = new_entry
+                        if user_agent:
+                            # try to add the user agent to the page, waiting for when the page loads
+                            logger.debug(page_complete(mozrepl))
+                            while (not dead.is_set() and (time_slept < sleep_time()) and
+                                   (not page_complete(mozrepl))):
+                                logger.debug("thread %d url not ready", firefox_num)
+                                delta = 1
+                                time_slept = time_slept + delta
+                                time.sleep(delta)
+                                add_user_agent(mozrepl, user_agent)
+                            delta = 2
                             time_slept = time_slept + delta
+                            if dead.is_set():
+                                break
                             time.sleep(delta)
                             add_user_agent(mozrepl, user_agent)
-                        delta = 2
-                        time_slept = time_slept + delta
-                        if dead.is_set():
-                            break
-                        time.sleep(delta)
-                        add_user_agent(mozrepl, user_agent)
-                        logger.debug("Thread %d added user agent %s", firefox_num, user_agent)
-            if dead.is_set():
-                break
-            time.sleep(sleep_time() - time_slept)
-
-    logger.info("Thread %d ending", firefox_num)
+                            logger.debug("Thread %d added user agent %s", firefox_num, user_agent)
+                if dead.is_set():
+                    break
+                time_to_sleep = sleep_time() - time_slept
+                if time_to_sleep > 0:
+                    time.sleep(time_to_sleep)
+    except Exception as err:
+        logger.exception(err)
+        dead.set()
+        restart.set()
+    finally:
+        logger.info("Thread %d ending", firefox_num)
 
 def find_best_entry(requests, old):
     """
