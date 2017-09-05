@@ -200,7 +200,7 @@ def start_display(init_sleep):
     """
     logger = create_logger(TMP_DIR + LOG_FILENAME)
     dead = threading.Event()
-    GracefulKiller(dead)
+    killer = GracefulKiller(dead)
     logger.info('Started')
     monitor_list = get_monitor_info(logger)
     firefox_procs = []
@@ -218,19 +218,20 @@ def start_display(init_sleep):
         for i in range(num_firefox):
             firefox_to_queue[i] = Queue.Queue()
 
-        firefox_procs = setup_browsers(num_firefox, firefox_procs, monitor_list, logger)
-        logger.info("Browsers setup")
-        # spawn a thread for each display
-        for i in range(num_firefox):
-            thread = threading.Thread(target=display_main, args=(i, firefox_to_queue[i],
-                                                                 dead, logger))
-            thread.start()
-            threads.append(thread)
+        firefox_procs = setup_browsers(num_firefox, firefox_procs, monitor_list, dead, logger)
+        if not dead.is_set():
+            logger.info("Browsers setup")
+            # spawn a thread for each display
+            for i in range(num_firefox):
+                thread = threading.Thread(target=display_main, args=(i, firefox_to_queue[i],
+                                                                     dead, logger))
+                thread.start()
+                threads.append(thread)
 
-        while not dead.is_set():
-            last_time = requests_to_queues(last_time, num_firefox, firefox_to_queue,
-                                           rules, logger)
-            time.sleep(sleep_time())
+            while not dead.is_set():
+                last_time = requests_to_queues(last_time, num_firefox, firefox_to_queue,
+                                               rules, logger)
+                time.sleep(sleep_time())
             # how do we delete things from the sqlite database?
     finally:
         dead.set()
@@ -242,7 +243,7 @@ def start_display(init_sleep):
         logger.info("Threads finished")
         logger.info('Finished')
 
-def setup_browsers(firefox_num, firefox_procs, monitor_list, logger):
+def setup_browsers(firefox_num, firefox_procs, monitor_list, dead, logger):
     """
     Create a firefox proceces for each of the monitors in monitor_list
     up to firefox_num and move the window to the assigned monitor. Tries
@@ -250,7 +251,7 @@ def setup_browsers(firefox_num, firefox_procs, monitor_list, logger):
     Returns the process ids in firefox_procs
     """
     in_position = False
-    while not in_position:
+    while not in_position and not dead.is_set():
         for i in range(firefox_num):
             logger.info("Trying to create firefox instances and move them")
             firefox_procs.append(subprocess.Popen(["firefox", "-no-remote", "-P",
@@ -433,11 +434,13 @@ def display_main(firefox_num, queue, dead, logger):
                 logger.debug("thread %d with %d requests", firefox_num, len(requests))
                 new_entry = find_best_entry(requests, current_entry)
             except Queue.Empty:
+                new_entry = None
                 logger.debug("thread %d queue empty", firefox_num)
 
             time_slept = 0
             # if the url should be changed
             if not (new_entry is None and current_entry is None):
+                
                 if new_entry:
                     # change to requested page
                     url = get_url(new_entry)
@@ -452,7 +455,8 @@ def display_main(firefox_num, queue, dead, logger):
                     url = choose_default_page()
                     user_agent = None
                     cycles_without_new = cycles_without_new + 1
-
+                    
+                log.debug("Thread %d %d cycles without new", firefox_num, cycles_without_new)
                 # if we should change
                 # (that is, if we have waited enough cycles to go back to default)
                 if cycles_without_new == 0 or cycles_without_new > DISPLAY_CYCLES_NO_NEW_REQUESTS:
