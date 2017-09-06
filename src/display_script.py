@@ -71,8 +71,6 @@ WAIT_BETWEEN_FIREFOX_FAILS = 1
 TIME_FORMAT = "%Y/%m/%d %H:%M:%S"
 FILE_TIME_FORMAT = "%Y-%m-%d_%H:%M:%S"
 
-VIDEO_LIKLIHOOD = .66
-
 TEST_MODE = False
 TEST_DISPLAY_SLEEP = DISPLAY_SLEEP
 TEST_QUERY = QUERY_NO_END + " and ts < ?;"
@@ -266,7 +264,9 @@ def requests_to_queues(inter_lists, last_entries, thread_cycles_without_new,
     # for each intermediate list, choose the best url
     entries = dict()
     num_monitors_to_default = 0
+
     for i in range(num_firefox):
+        logger.debug("thread %d with %d cycles without new", i, thread_cycles_without_new[i])
         requests = inter_lists[i]
         current_entry = last_entries[i]
         new_entry = find_best_entry(requests, current_entry)
@@ -280,19 +280,22 @@ def requests_to_queues(inter_lists, last_entries, thread_cycles_without_new,
             entries[i] = None
             num_monitors_to_default = num_monitors_to_default + 1
         thread_cycles_without_new[i] = thread_cycles_without_new[i] + 1
+    logger.info("%d threads changing to default", num_monitors_to_default)
     video_page_assigned = False
     for i in range(num_firefox):
         new_entry = None
         if i in entries:
             if entries[i] is None:
                 if num_monitors_to_default > 1 and not video_page_assigned:
-                    new_entry = DEFAULT_PAGE_VIDEO
+                    if last_entries[i] != DEFAULT_PAGE_VIDEO:
+                        new_entry = DEFAULT_PAGE_VIDEO
                     video_page_assigned = True
-                else:
+                elif last_entries[i] != DEFAULT_PAGE:
                     new_entry = DEFAULT_PAGE
             else:
                 new_entry = entries[i]
-            last_entries[i] = new_entry
+            if new_entry is not None:
+                last_entries[i] = new_entry
         firefox_to_queue[i].put(new_entry)
 
 def setup_browsers(firefox_num, firefox_procs, monitor_list, dead, logger):
@@ -466,6 +469,7 @@ def display_main(firefox_num, queue, dead, restart, logger):
                 new_entry = display_get_next(queue, firefox_num, logger)
 
                 if new_entry is None:
+                    time.sleep(sleep_time())
                     continue
 
                 if not new_entry in DEFAULT_PAGES:
@@ -507,9 +511,10 @@ def display_get_next(queue, firefox_num, logger):
     try:
         # get urls from the main thread
         new_entry = queue.get_nowait()
-        logger.debug("thread %d with %d request", firefox_num, new_entry)
+        if new_entry:
+            logger.debug("thread %d with %s request", firefox_num, str(new_entry))
     except Queue.Empty:
-        logger.debug("thread %d queue empty", firefox_num)
+        pass
     return new_entry
 
 def add_user_agent_nice(user_agent, mozrepl, time_slept, firefox_num, dead, logger):
