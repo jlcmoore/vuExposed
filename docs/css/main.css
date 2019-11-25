@@ -58,7 +58,7 @@ h1, h2, h3, h4 {
   z-index: -100;
   -webkit-transform: translateX(-50%) translateY(-50%);
   transform: translateX(-50%) translateY(-50%);
-  background: url("../img/displays.gif") no-repeat;
+  background: url("../img/displays_smaller.gif") no-repeat;
   background-size: cover;
 }
 
@@ -68,7 +68,7 @@ h1, h2, h3, h4 {
 
 .img-overlay {
   background-color: #17234E;
-  background-image: url("../img/displays.gif");
+  background-image: url("../img/displays_smaller.gif");
   position: absolute;
   width: 100%;
   height: inherit;
@@ -163,7 +163,7 @@ footer p {
     margin: 0 auto;
 }
 
-.nav_vu {
+.nav_may {
   text-align: center;
   font-size: 15px;
 }
@@ -175,6 +175,7 @@ footer p {
 
 #logo {
   padding: 0;
+  max-height: 50px;
 }
 
 .navbar-brand {
